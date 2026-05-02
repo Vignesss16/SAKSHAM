@@ -33,6 +33,7 @@ function LoginContent() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Sign in failed')
       setSuccess(true)
+      localStorage.setItem('user_name', data.user?.name || signin.email.split('@')[0])
       setTimeout(() => { window.location.href = '/dashboard' }, 1200)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -54,6 +55,7 @@ function LoginContent() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Sign up failed')
       setSuccess(true)
+      localStorage.setItem('user_name', signup.name || signup.email.split('@')[0])
       setTimeout(() => { window.location.href = '/dashboard' }, 1200)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

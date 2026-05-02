@@ -24,6 +24,13 @@ export default function DashboardLayout({
     return <>{children}</>;
   }
 
+  const [userName, setUserName] = React.useState("Student");
+
+  React.useEffect(() => {
+    const name = localStorage.getItem("user_name");
+    if (name) setUserName(name);
+  }, []);
+
   const isActive = (item: { href: string; exact?: boolean }) => {
     if (item.exact) return pathname === item.href;
     return pathname.startsWith(item.href);
@@ -38,12 +45,12 @@ export default function DashboardLayout({
         </div>
 
         <div className="mb-6 px-4 py-3 bg-white/5 rounded-xl flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-sm shrink-0">
-            A
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-sm shrink-0 uppercase">
+            {userName.charAt(0)}
           </div>
           <div>
             <div className="font-['Plus_Jakarta_Sans'] text-sm font-bold text-[var(--c-text)]">
-              Alex Rivera
+              {userName}
             </div>
             <div className="text-xs text-[var(--c-muted)]">Student</div>
           </div>
@@ -106,11 +113,11 @@ export default function DashboardLayout({
             </button>
             <div className="w-px h-6 bg-[var(--c-border)] mx-1"></div>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-[13px]">
-                A
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-[13px] uppercase">
+                {userName.charAt(0)}
               </div>
               <span className="text-sm font-medium text-[var(--c-text)]">
-                Alex Rivera
+                {userName}
               </span>
             </div>
           </div>
