@@ -35,7 +35,7 @@ The repository contains a `.env.local.example` file showing the required variabl
 Simply place the provided `.env.local` file into the root directory of the project before running the server. This file contains all the necessary API keys for:
 - Supabase (Database & Auth)
 - Agora (Voice Agent & Tokens)
-- AI Engines (Gemini & OpenAI)
+- AI Engines (Groq & OpenAI)
 
 ### 4. Database Setup
 
@@ -55,7 +55,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 - **Styling**: Tailwind CSS
 - **Database/Auth**: Supabase
 - **Real-time Voice**: Agora SDK (RTC/RTM)
-- **AI Engine**: Google Gemini (Llama 3.3 support via Groq or similar logic)
+- **AI Engine**: Groq (Llama 3.3) for backend logic, OpenAI for voice pipeline
 - **PDF Generation**: @react-pdf/renderer (Declarative native PDF generation)
 
 ## ✨ Core Features
