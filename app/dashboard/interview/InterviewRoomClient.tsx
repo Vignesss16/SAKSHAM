@@ -193,21 +193,15 @@ function InterviewContent({
 
   useEffect(() => {
     // Check if the agent's message indicates a transition to coding/programming
-    const triggerRegex = /coding|programming|technical task|code editor/i;
-    
-    const lastMsg = messageList[messageList.length - 1];
-    const liveText = currentInProgressMessage?.text.toLowerCase() || "";
+    const triggerRegex = /moving on to the next round.*?coding round|which is the coding round|concludes this part of the interview/i;
     
     // Ensure the message is actually from the agent, not the user
-    const isAgentSpeakingLive = currentInProgressMessage ? String(currentInProgressMessage.uid) === agentUID : false;
-    const isAgentSpeakingHistory = lastMsg ? String(lastMsg.uid) === agentUID : false;
-
-    const isTriggered = 
-      (isAgentSpeakingLive && triggerRegex.test(liveText)) || 
-      (isAgentSpeakingHistory && triggerRegex.test(lastMsg?.text.toLowerCase() || ""));
+    const hasAgentTriggeredInHistory = messageList.some(msg => 
+      String(msg.uid) === agentUID && triggerRegex.test(msg.text.toLowerCase())
+    );
     
-    if (isTriggered && !isCodingRound) {
-      console.log("🎯 Coding Round Triggered by AI phrase:", isAgentSpeakingLive ? liveText : lastMsg?.text);
+    if (hasAgentTriggeredInHistory && !isCodingRound) {
+      console.log("🎯 Coding Round Triggered by AI phrase in history.");
       setIsCodingRound(true);
       
       // Stop the agent
