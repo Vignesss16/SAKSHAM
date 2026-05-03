@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           model: 'gpt-4o-mini',
           greetingMessage: GREETING,
           failureMessage: 'Please wait a moment.',
-          maxHistory: 15,
+          maxHistory: 50,
           params: {
             max_tokens: 1024,
             temperature: 0.7,
