@@ -1,0 +1,210 @@
+import React, { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { Loader2, Play, CheckCircle2 } from 'lucide-react';
+
+interface CodingQuestion {
+  title: string;
+  description: string;
+  languageSnippets: {
+    javascript: string;
+    python: string;
+    java: string;
+    cpp: string;
+  };
+}
+
+interface CodingRoundProps {
+  onComplete: (code: string, language: string) => void;
+}
+
+export default function CodingRound({ onComplete }: CodingRoundProps) {
+  const [question, setQuestion] = useState<CodingQuestion | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [language, setLanguage] = useState<'javascript' | 'python' | 'java' | 'cpp'>('javascript');
+  const [code, setCode] = useState('');
+  const [output, setOutput] = useState('');
+  
+  // Sequence state
+  const [questionIndex, setQuestionIndex] = useState(0); // 0 = Easy, 1 = Medium
+  const [allSubmissions, setAllSubmissions] = useState<string[]>([]);
+
+  const fetchQuestion = async (difficultyOverride: string) => {
+    setIsLoading(true);
+    try {
+      const storedVars = localStorage.getItem('omnidimension_variables');
+      const variables = storedVars ? JSON.parse(storedVars) : {};
+
+      const res = await fetch('/api/generate-coding-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobTitle: variables.role,
+          targetCompany: variables.company,
+          difficulty: difficultyOverride,
+        }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to fetch coding question');
+      const data = await res.json();
+      setQuestion(data);
+      setCode(data.languageSnippets['javascript']);
+      setOutput('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestion('Easy');
+  }, []);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const lang = e.target.value;
+    setLanguage(lang as 'javascript' | 'python' | 'java' | 'cpp');
+    if (question && question.languageSnippets) {
+      setCode(question.languageSnippets[lang as keyof typeof question.languageSnippets] || '');
+    }
+  };
+
+  const handleRunCode = () => {
+    if (language === 'javascript') {
+      try {
+        let logs: string[] = [];
+        const originalConsoleLog = console.log;
+        console.log = (...args) => {
+          logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+        
+        new Function(code)();
+        
+        console.log = originalConsoleLog;
+        setOutput(logs.join('\n') || 'Code executed successfully with no output.');
+      } catch (err: any) {
+        setOutput(err.toString());
+      }
+    } else {
+      setOutput(`Execution for ${language} is mocked in this environment.\nCode submitted successfully for analysis.`);
+    }
+  };
+
+  const handleSubmit = () => {
+    const currentSubmission = `// Question: ${question?.title}\n// Language: ${language}\n\n${code}`;
+    const newSubmissions = [...allSubmissions, currentSubmission];
+    
+    if (questionIndex === 0) {
+      // Move to second question
+      setAllSubmissions(newSubmissions);
+      setQuestionIndex(1);
+      fetchQuestion('Medium');
+    } else {
+      // Finish round
+      const combinedCode = newSubmissions.join('\n\n----------------------------------------\n\n');
+      onComplete(combinedCode, language);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-[calc(100vh-64px-40px)]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-[#00d1ff]" />
+          <p className="text-[#859399]">Generating {questionIndex === 0 ? 'Easy' : 'Medium'} coding question...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-[#ffb4ab]">
+        Failed to load coding question.
+      </div>
+    );
+  }
+
+  return (
+    <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
+      {/* Left: Problem Description */}
+      <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
+        <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-8 flex flex-col gap-6 flex-1 shadow-sm overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#00d1ff]">code</span>
+            <span className="text-sm text-[#859399] uppercase tracking-widest font-bold">Coding Round - Question {questionIndex + 1}/2</span>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto pr-2">
+            <h2 className="text-xl font-bold text-white font-['Plus_Jakarta_Sans'] mb-4">{question.title}</h2>
+            <div className="text-sm text-[#bbc9cf] leading-relaxed whitespace-pre-wrap font-['Inter']">
+              {question.description}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Right: Monaco Editor & Console */}
+      <section className="col-span-12 lg:col-span-8 flex flex-col gap-6 h-full">
+        <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl flex flex-col flex-1 shadow-sm overflow-hidden">
+          {/* Editor Header */}
+          <div className="p-4 border-b border-[#242424] flex items-center justify-between bg-[#161d1f]">
+            <div className="flex items-center gap-4">
+              <select 
+                value={language}
+                onChange={handleLanguageChange}
+                className="bg-[#242b2e] border border-[#242424] text-[#dde3e7] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#00d1ff]"
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleRunCode}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#242b2e] text-[#00d1ff] hover:bg-[#2c3437] transition-colors text-sm font-semibold border border-[#242424]"
+              >
+                <Play className="w-4 h-4" /> Run
+              </button>
+              <button 
+                onClick={handleSubmit}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#00d1ff] text-[#001f28] hover:shadow-[0_0_15px_rgba(0,209,255,0.4)] transition-all text-sm font-bold"
+              >
+                <CheckCircle2 className="w-4 h-4" /> {questionIndex === 0 ? 'Next Question' : 'Submit All'}
+              </button>
+            </div>
+          </div>
+
+          {/* Monaco Editor */}
+          <div className="flex-1 relative">
+            <Editor
+              height="100%"
+              language={language}
+              theme="vs-dark"
+              value={code}
+              onChange={(val) => setCode(val || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                padding: { top: 16 },
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </div>
+
+          {/* Console Output */}
+          <div className="h-48 border-t border-[#242424] bg-[#121212] flex flex-col">
+            <div className="px-4 py-2 bg-[#161d1f] border-b border-[#242424] text-xs font-bold text-[#859399] uppercase tracking-wider">
+              Console Output
+            </div>
+            <div className="flex-1 p-4 overflow-y-auto font-mono text-sm text-[#bbc9cf] whitespace-pre-wrap">
+              {output || "Run your code to see output..."}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

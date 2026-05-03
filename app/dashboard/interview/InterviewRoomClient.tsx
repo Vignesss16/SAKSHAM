@@ -30,6 +30,7 @@ import {
 import { AgentVisualizer, ConvoTextStream } from 'agora-agent-uikit';
 import { MicButtonWithVisualizer } from 'agora-agent-uikit/rtc';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import CodingRound from './CodingRound';
 
 import { DEFAULT_AGENT_UID } from '@/lib/agora';
 import {
@@ -75,6 +76,10 @@ function InterviewContent({
   >([]);
   const [agentState, setAgentState] = useState<AgentState | null>(null);
 
+  // Coding Round State
+  const [isCodingRound, setIsCodingRound] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
   // Timer
   useEffect(() => {
     const t = setInterval(() => setSeconds((s) => s + 1), 1000);
@@ -104,7 +109,11 @@ function InterviewContent({
     isReady,
   );
 
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(isReady);
+  const { localMicrophoneTrack } = useLocalMicrophoneTrack(isReady, {
+    AEC: true,
+    ANS: true,
+    AGC: true,
+  });
 
   useEffect(() => {
     if (!client) return;
@@ -182,6 +191,38 @@ function InterviewContent({
     return getCurrentInProgressMessage(transcript);
   }, [transcript]);
 
+  useEffect(() => {
+    // Check if the agent's message indicates a transition to coding/programming
+    const triggerRegex = /coding|programming|technical task|code editor/i;
+    
+    const lastMsg = messageList[messageList.length - 1];
+    const liveText = currentInProgressMessage?.text.toLowerCase() || "";
+    
+    // Ensure the message is actually from the agent, not the user
+    const isAgentSpeakingLive = currentInProgressMessage ? String(currentInProgressMessage.uid) === agentUID : false;
+    const isAgentSpeakingHistory = lastMsg ? String(lastMsg.uid) === agentUID : false;
+
+    const isTriggered = 
+      (isAgentSpeakingLive && triggerRegex.test(liveText)) || 
+      (isAgentSpeakingHistory && triggerRegex.test(lastMsg?.text.toLowerCase() || ""));
+    
+    if (isTriggered && !isCodingRound) {
+      console.log("🎯 Coding Round Triggered by AI phrase:", isAgentSpeakingLive ? liveText : lastMsg?.text);
+      setIsCodingRound(true);
+      
+      // Stop the agent
+      if (agoraData?.agentId) {
+        fetch('/api/stop-conversation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: agoraData.agentId }),
+        }).catch(console.error);
+      }
+      
+      rtmClient?.logout().catch(console.error);
+    }
+  }, [currentInProgressMessage, messageList, agentUID, isCodingRound, agoraData?.agentId, rtmClient]);
+
   usePublish([localMicrophoneTrack]);
 
   useClientEvent(client, 'user-joined', (user) => {
@@ -239,8 +280,47 @@ function InterviewContent({
     router.push('/dashboard/reports');
   };
 
+  const handleCodingRoundComplete = async (code: string, language: string) => {
+    setIsGeneratingReport(true);
+    try {
+      const storedVars = localStorage.getItem('omnidimension_variables');
+      const variables = storedVars ? JSON.parse(storedVars) : {};
+
+      const res = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          language,
+          transcript: messageList,
+          variables
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to generate report');
+      const data = await res.json();
+      
+      router.push(`/dashboard/reports?id=${data.id}`);
+    } catch (err) {
+      console.error(err);
+      alert('There was an error generating the report. Please check the console.');
+      setIsGeneratingReport(false);
+    }
+  };
+
   const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
   const secs = String(seconds % 60).padStart(2, "0");
+
+  let progressText = "Voice Interview";
+  let progressPercentage = Math.min(50, 10 + Math.floor((seconds / 300) * 40));
+
+  if (isGeneratingReport) {
+    progressText = "Generating Report";
+    progressPercentage = 100;
+  } else if (isCodingRound) {
+    progressText = "Coding Phase";
+    progressPercentage = 75;
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#0e1417] text-[#dde3e7]">
@@ -259,11 +339,11 @@ function InterviewContent({
         <div className="flex-1 max-w-xl px-10">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-[#859399] font-medium">Question 3 of 10</span>
-              <span className="text-xs text-[#00d1ff] font-bold">30% Complete</span>
+              <span className="text-xs text-[#859399] font-medium">{progressText}</span>
+              <span className="text-xs text-[#00d1ff] font-bold">{progressPercentage}% Complete</span>
             </div>
             <div className="w-full bg-[#242b2e] h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#00d1ff] h-full w-[30%] shadow-[0_0_10px_rgba(0,209,255,0.4)]"></div>
+              <div className="bg-[#00d1ff] h-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,209,255,0.4)]" style={{ width: `${progressPercentage}%` }}></div>
             </div>
           </div>
         </div>
@@ -282,6 +362,16 @@ function InterviewContent({
       </header>
 
       {/* Main content */}
+      {isGeneratingReport ? (
+        <div className="flex-1 flex items-center justify-center h-[calc(100vh-64px-40px)]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-[#00d1ff]" />
+            <p className="text-[#859399]">Analyzing your interview performance and generating comprehensive report...</p>
+          </div>
+        </div>
+      ) : isCodingRound ? (
+        <CodingRound onComplete={handleCodingRoundComplete} />
+      ) : (
       <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
         {/* Left: Question */}
         <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
@@ -375,9 +465,9 @@ function InterviewContent({
               {messageList.map((msg, idx) => (
                 <div key={idx} className="flex flex-col gap-2">
                   <span className="text-xs text-[#859399]">
-                    {msg.sender === agentUID ? 'PrepAI' : 'You'}
+                    {String(msg.uid) === agentUID ? 'PrepAI' : 'You'}
                   </span>
-                  <p className={`text-base leading-relaxed ${msg.sender === agentUID ? 'text-[#bbc9cf]' : 'text-white'}`}>
+                  <p className={`text-base leading-relaxed ${String(msg.uid) === agentUID ? 'text-[#bbc9cf]' : 'text-white'}`}>
                     {msg.text}
                   </p>
                 </div>
@@ -403,6 +493,7 @@ function InterviewContent({
           </div>
         </section>
       </main>
+      )}
 
       {/* Background ambient */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -473,7 +564,7 @@ export default function InterviewRoomClient() {
           (async () => {
             const rtm = new AgoraRTM.RTM(process.env.NEXT_PUBLIC_AGORA_APP_ID!, String(randomUid));
             await rtm.login({ token: responseData.rtmToken });
-            await rtm.subscribe(responseData.channel);
+            await rtm.subscribe(responseData.channel, { withPresence: false });
             return rtm;
           })()
         ]);

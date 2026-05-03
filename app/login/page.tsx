@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 function LoginContent() {
   const searchParams = useSearchParams()
@@ -15,6 +16,8 @@ function LoginContent() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
+  const supabase = createClient()
+
   // Sign-in form state
   const [signin, setSignin] = useState({ email: '', password: '' })
   // Sign-up form state
@@ -25,18 +28,16 @@ function LoginContent() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signin),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: signin.email,
+        password: signin.password,
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Sign in failed')
+      if (error) throw error
       setSuccess(true)
-      localStorage.setItem('user_name', data.user?.name || signin.email.split('@')[0])
+      localStorage.setItem('user_name', data.user?.user_metadata?.full_name || signin.email.split('@')[0])
       setTimeout(() => { window.location.href = '/dashboard' }, 1200)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -47,20 +48,38 @@ function LoginContent() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signup),
+      const { data, error } = await supabase.auth.signUp({
+        email: signup.email,
+        password: signup.password,
+        options: {
+          data: {
+            full_name: signup.name,
+          }
+        }
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Sign up failed')
+      if (error) throw error
       setSuccess(true)
       localStorage.setItem('user_name', signup.name || signup.email.split('@')[0])
       setTimeout(() => { window.location.href = '/dashboard' }, 1200)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError('')
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${location.origin}/api/auth/callback`,
+        },
+      })
+      if (error) throw error
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Google')
     }
   }
 
@@ -213,6 +232,7 @@ function LoginContent() {
 
           {/* Google OAuth */}
           <button
+            onClick={handleGoogleSignIn}
             className="w-full flex items-center justify-center gap-3 py-3 rounded-[10px] border border-[var(--c-border)] bg-[var(--c-bg2)] text-sm font-semibold text-[var(--c-text)] hover:border-[rgba(0,209,255,0.2)] hover:bg-[var(--c-bg3)] transition-all mb-6"
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -399,3 +419,4 @@ export default function LoginPage() {
     </Suspense>
   )
 }
+

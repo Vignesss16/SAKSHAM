@@ -1,13 +1,55 @@
 import Link from "next/link";
 import React from "react";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  let firstName = "Student";
+  let interviewsCompleted = 0;
+  let lastScore: number | string = "--";
+  let recentInterviews: any[] = [];
+  let certificatesEarned = 0;
+
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    const fullName = profile?.full_name || user.user_metadata?.full_name || "Student";
+    firstName = fullName.split(" ")[0];
+
+    const { data: interviewsData } = await supabase
+      .from("interviews")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (interviewsData) {
+      recentInterviews = interviewsData;
+      interviewsCompleted = interviewsData.length;
+      if (interviewsData.length > 0) {
+        lastScore = interviewsData[0].score !== null ? interviewsData[0].score : "--";
+      }
+    }
+  }
+
   return (
     <div id="dash-home">
       <div className="flex justify-between items-end mb-7 flex-wrap gap-4">
         <div>
           <h1 className="font-heading text-[clamp(24px,3vw,32px)] font-black m-0 mb-1.5 tracking-tight text-[var(--c-text)]">
-            Welcome back, Alex 👋
+            Welcome back, {firstName} 👋
           </h1>
           <p className="text-muted text-[15px] m-0">
             Track your progress and prep for your upcoming Software Engineer mock.
@@ -37,7 +79,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-heading text-[40px] font-black text-[var(--c-text)]">
-              78
+              {lastScore}
             </span>
             <span className="text-muted text-base">/100</span>
           </div>
@@ -45,7 +87,7 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-base">
               trending_up
             </span>
-            +5.2% from last session
+            Based on AI evaluation
           </div>
         </div>
 
@@ -62,10 +104,10 @@ export default function DashboardPage() {
             </span>
           </div>
           <span className="font-heading text-[40px] font-black text-[var(--c-text)]">
-            12
+            {interviewsCompleted}
           </span>
           <div className="progress-bar mt-1">
-            <div className="progress-fill w-[75%]"></div>
+            <div className="progress-fill" style={{ width: `${Math.min(interviewsCompleted * 10, 100)}%` }}></div>
           </div>
         </div>
 
@@ -86,10 +128,10 @@ export default function DashboardPage() {
           </div>
           <div>
             <span className="font-heading text-[17px] font-bold">
-              Tomorrow, 10 AM
+              Whenever you&apos;re ready
             </span>
             <p className="text-muted text-xs mt-1 mb-0">
-              Frontend Architecture Review
+              Start an on-demand session
             </p>
           </div>
           <Link
@@ -116,7 +158,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <span className="font-heading text-[40px] font-black text-[var(--c-text)]">
-            3
+            {certificatesEarned}
           </span>
           <Link
             href="/dashboard/certificates"
@@ -144,79 +186,39 @@ export default function DashboardPage() {
           </div>
           <div className="glass overflow-hidden rounded-[14px]">
             {/* Activity items */}
-            <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--c-border)] cursor-pointer transition-colors hover:bg-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 bg-[var(--c-bg3)] rounded-[10px] flex items-center justify-center text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">
-                    code
-                  </span>
-                </div>
-                <div>
-                  <div className="font-heading text-sm font-semibold text-[var(--c-text)]">
-                    Software Engineer – Backend Focus
-                  </div>
-                  <div className="text-xs text-muted">
-                    Completed 2 hours ago · 45 min
-                  </div>
-                </div>
+            {recentInterviews.length === 0 ? (
+              <div className="px-5 py-8 text-center text-muted">
+                No recent interviews found. Start your first session!
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="font-heading text-[15px] font-bold text-[var(--c-text)]">
-                    82/100
+            ) : (
+              recentInterviews.slice(0, 3).map((interview) => (
+                <div key={interview.id} className="px-5 py-4 flex items-center justify-between border-b border-[var(--c-border)] cursor-pointer transition-colors hover:bg-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-[var(--c-bg3)] rounded-[10px] flex items-center justify-center text-primary shrink-0">
+                      <span className="material-symbols-outlined text-[20px]">
+                        code
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-heading text-sm font-semibold text-[var(--c-text)]">
+                        {interview.title || "Mock Interview"}
+                      </div>
+                      <div className="text-xs text-muted">
+                        Completed {new Date(interview.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                  <div className="badge badge-teal text-[9px]">Completed</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--c-border)] cursor-pointer transition-colors hover:bg-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 bg-[var(--c-bg3)] rounded-[10px] flex items-center justify-center text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">
-                    data_object
-                  </span>
-                </div>
-                <div>
-                  <div className="font-heading text-sm font-semibold text-[var(--c-text)]">
-                    Data Structure Deep Dive
-                  </div>
-                  <div className="text-xs text-muted">
-                    Scheduled for Oct 24, 2:00 PM
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-heading text-[15px] font-bold text-muted">
-                  --/--
-                </div>
-                <div className="badge badge-blue text-[9px]">Pending</div>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 flex items-center justify-between cursor-pointer transition-colors hover:bg-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 bg-[var(--c-bg3)] rounded-[10px] flex items-center justify-center text-tertiary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">
-                    psychology
-                  </span>
-                </div>
-                <div>
-                  <div className="font-heading text-sm font-semibold text-[var(--c-text)]">
-                    Behavioral Interview Round
-                  </div>
-                  <div className="text-xs text-muted">
-                    Completed Oct 20 · 32 min
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="font-heading text-[15px] font-bold text-[var(--c-text)]">
+                        {interview.score !== null ? `${interview.score}/100` : "--/100"}
+                      </div>
+                      <div className="badge badge-teal text-[9px]">Completed</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="font-heading text-[15px] font-bold text-[var(--c-text)]">
-                  74/100
-                </div>
-                <div className="badge badge-teal text-[9px]">Completed</div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -235,15 +237,15 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="text-[13px] text-[var(--c-text)] leading-[1.7] m-0 mb-4">
-              Your technical answers are strong, but your soft-skill responses
-              show hesitancy. Focus on STAR-method behavioral questions before
-              your next interview.
+              {recentInterviews.length > 0 
+                ? "Your technical answers are solid. Review your previous AI feedback and continue practicing to boost your confidence."
+                : "Welcome to PrepAI! Start a mock interview to get personalized insights and improve your interview skills."}
             </p>
             <Link
               href="/dashboard/new"
               className="btn-primary w-full justify-center text-[13px] p-2.5"
             >
-              Practice Behavioral
+              Practice Now
             </Link>
           </div>
 

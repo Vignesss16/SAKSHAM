@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       appCertificate,
     });
 
-    const GREETING = "Hello! I am your AI interviewer from PrepAI. We will be doing an interview today.";
+    const GREETING = "Hello! I am your AI interviewer from PrepAI. I have reviewed your profile and the job description. Are you ready to begin the interview?";
 
     const agent = new Agent({
       name: `interview-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
