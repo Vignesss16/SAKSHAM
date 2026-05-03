@@ -30,34 +30,16 @@ npm install --legacy-peer-deps
 
 ### 3. Environment Setup
 
-Create a `.env.local` file in the root directory and populate it with the following keys. You can refer to `.env.local.example` for the required fields.
+The repository contains a `.env.local.example` file showing the required variables. However, for immediate use, **I will provide the complete `.env.local` file privately.**
 
-```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Agora Voice Agent Configuration
-NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id
-NEXT_AGORA_APP_CERTIFICATE=your_agora_certificate
-NEXT_PUBLIC_AGENT_UID=your_agent_uid
-
-# AI API Keys
-GEMINI_API_KEY=your_google_gemini_key
-OPENAI_API_KEY=your_openai_key (Required for Agora Agent pipeline)
-
-# Application URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+Simply place the provided `.env.local` file into the root directory of the project before running the server. This file contains all the necessary API keys for:
+- Supabase (Database & Auth)
+- Agora (Voice Agent & Tokens)
+- AI Engines (Gemini & OpenAI)
 
 ### 4. Database Setup
 
-Ensure your Supabase project has the following tables and schemas:
-- `profiles`
-- `interviews`
-- `coding_questions`
-- `reports`
+Ensure your Supabase project is active. If you are using the shared database instance, no additional setup is required once the `.env.local` is in place.
 
 ### 5. Run the Development Server
 
