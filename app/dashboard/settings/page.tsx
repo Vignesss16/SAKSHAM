@@ -63,8 +63,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'profile', label: 'Profile' },
     { id: 'notifications', label: 'Notifications' },
-    { id: 'billing', label: 'Billing' },
-    { id: 'integration', label: 'Integrations' },
   ];
 
   return (
@@ -170,48 +168,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {activeTab === 'billing' && (
-          <div className="glass p-6">
-            <h3 className="font-['Plus_Jakarta_Sans'] text-lg font-bold mb-4">Billing & Plan</h3>
-            <div className="bg-[#242b2e]/50 p-4 rounded-xl border border-[#3c494e] mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-bold text-white">Pro Plan</span>
-                <span className="bg-[#00d1ff]/20 text-[#00d1ff] px-2 py-1 text-xs font-bold rounded">ACTIVE</span>
-              </div>
-              <p className="text-sm text-[#bbc9cf]">Unlimited interviews and advanced analytics.</p>
-            </div>
-            <button className="btn-ghost text-sm">Manage Subscription</button>
-          </div>
-        )}
 
-        {activeTab === 'integration' && (
-          <div className="glass p-6">
-            <h3 className="font-['Plus_Jakarta_Sans'] text-lg font-bold mb-4">Integrations</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-[#242b2e]/50 rounded-xl border border-[#3c494e]">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white rounded flex items-center justify-center font-bold text-[#1a73e8] text-xl">G</div>
-                  <div>
-                    <div className="font-bold text-white text-sm">Google Calendar</div>
-                    <div className="text-xs text-[#bbc9cf]">Sync your scheduled mock interviews.</div>
-                  </div>
-                </div>
-                <button className="btn-ghost text-xs">Connect</button>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-[#242b2e]/50 rounded-xl border border-[#3c494e]">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-[#0052cc] rounded flex items-center justify-center font-bold text-white text-xl">J</div>
-                  <div>
-                    <div className="font-bold text-white text-sm">Jira</div>
-                    <div className="text-xs text-[#bbc9cf]">Export system design tickets.</div>
-                  </div>
-                </div>
-                <button className="btn-ghost text-xs">Connect</button>
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

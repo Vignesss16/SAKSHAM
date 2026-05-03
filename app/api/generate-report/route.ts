@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     Analyze the candidate's performance across technical, behavioral, and communication skills.
     Generate a detailed JSON report with the exact structure below. Do not include markdown formatting or backticks around the JSON.
     {
-      "overallScore": 85, // integer 0-100. Be realistic. If there is little to no transcript and no code, score very low (e.g., 0-20).
+      "overallScore": 85,
       "summary": "A brief 2-3 sentence summary of the candidate's performance. Mention if they didn't speak or code.",
       "metrics": [
         { "label": "Content Quality", "score": 88, "note": "Short note" },
@@ -93,9 +93,28 @@ export async function POST(req: Request) {
       throw new Error('Failed to save interview to database');
     }
 
-    // Issue certificate if score >= 80
+    // Calculate credits based on score
+    const score = reportData.overallScore || 0;
+    let creditsEarned = 100;
+    if (score >= 90) creditsEarned = 1000;
+    else if (score >= 70) creditsEarned = 500;
+    else if (score >= 40) creditsEarned = 300;
+    else creditsEarned = 100;
+
+    // Award credits
+    try {
+      await supabase.rpc('increment_credits', {
+        user_id_input: user.id,
+        amount: creditsEarned,
+      });
+    } catch (creditsError) {
+      console.error('Failed to award credits:', creditsError);
+      // Non-fatal — don't fail the whole request
+    }
+
+    // Issue certificate if score >= 75
     let certificateId = null;
-    if (reportData.overallScore >= 80) {
+    if (reportData.overallScore >= 75) {
       const { data: certData, error: certError } = await supabase
         .from('certificates')
         .insert([
@@ -131,11 +150,10 @@ export async function POST(req: Request) {
         });
       } catch (webhookError) {
         console.error('Failed to trigger n8n webhook:', webhookError);
-        // We don't fail the request if webhook fails
       }
     }
 
-    return NextResponse.json({ id: insertData.id, report: reportData });
+    return NextResponse.json({ id: insertData.id, report: reportData, creditsEarned });
   } catch (error: any) {
     console.error('Error generating report:', error);
     return NextResponse.json({ error: error.message || 'Failed to generate report' }, { status: 500 });

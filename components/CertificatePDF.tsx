@@ -118,7 +118,7 @@ export const CertificatePDF = ({ name, role, score, date, certId }: CertificateP
             <Text style={styles.footerValue}>{certId}</Text>
           </View>
           <View style={[styles.footerCol, { alignItems: 'flex-end' }]}>
-            <Text style={[styles.footerValue, { fontStyle: 'italic', color: '#00d1ff' }]}>PrepAI Certification</Text>
+            <Text style={[styles.footerValue, { fontStyle: 'italic', color: '#00d1ff' }]}>SAKSHAM.AI Certification</Text>
             <Text style={styles.footerLabel}>Authorized Signature</Text>
           </View>
         </View>

@@ -1,5 +1,4 @@
 'use client'
-import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -21,7 +20,6 @@ export default function NewInterviewPage() {
     try {
       const formData = new FormData(e.currentTarget);
       
-      // Post to our new API route
       const res = await fetch('/api/generate-prompt', {
         method: 'POST',
         body: formData,
@@ -33,13 +31,11 @@ export default function NewInterviewPage() {
 
       const data = await res.json();
       
-      // Save the generated prompt to localStorage so the interview page can read it
       localStorage.setItem('omnidimension_system_prompt', data.prompt);
       if (data.variables) {
         localStorage.setItem('omnidimension_variables', JSON.stringify(data.variables));
       }
       
-      // Navigate to the interview page
       router.push('/dashboard/interview');
     } catch (error) {
       console.error(error);
@@ -51,15 +47,7 @@ export default function NewInterviewPage() {
 
   return (
     <form onSubmit={handleSubmit} style={{ minHeight: '100vh', background: 'var(--c-bg)', position: 'relative' }}>
-      {/* Minimal top bar */}
-      <header style={{ background: 'var(--c-bg1)', borderBottom: '1px solid var(--c-border)', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px' }}>
-        <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: 'var(--c-primary)' }}>PrepAI</div>
-        <Link href="/dashboard" className="btn-ghost" style={{ fontSize: 13, padding: '8px 16px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span> Back
-        </Link>
-      </header>
-
-      <div style={{ maxWidth: 800, margin: '60px auto', padding: '0 24px' }}>
+      <div style={{ maxWidth: 1100, margin: '40px auto', padding: '0 32px' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(24px,3vw,36px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' }}>Configure Your Interview</h1>
           <p style={{ color: 'var(--c-muted)', fontSize: 16, margin: 0 }}>Customize the session to match your target company and role.</p>
@@ -101,6 +89,9 @@ export default function NewInterviewPage() {
             <div style={{ marginTop: 20 }}>
               <label style={{ fontSize: 12, color: 'var(--c-muted)', marginBottom: 6, display: 'block' }}>Resume (PDF)</label>
               <input name="resume" type="file" accept="application/pdf" className="field" style={{ padding: '10px' }} required />
+              <p style={{ fontSize: 11, color: 'var(--c-muted)', marginTop: 6 }}>
+                💡 <a href="/dashboard/resume" style={{ color: 'var(--c-primary)', textDecoration: 'none' }}>Manage saved resumes →</a>
+              </p>
             </div>
             
             <div style={{ marginTop: 20 }}>
@@ -108,8 +99,6 @@ export default function NewInterviewPage() {
               <textarea name="jd" className="field" rows={4} placeholder="Paste the job description here..." required></textarea>
             </div>
           </div>
-
-
 
           {/* AI Persona */}
           <div className="glass" style={{ padding: 28 }}>
