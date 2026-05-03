@@ -115,13 +115,16 @@ export async function POST(req: Request) {
     // Issue certificate if score >= 75
     let certificateId = null;
     if (reportData.overallScore >= 75) {
+      const certId = 'SAKSHAM-' + Math.random().toString(36).substring(2, 10).toUpperCase();
       const { data: certData, error: certError } = await supabase
         .from('certificates')
         .insert([
           {
+            certificate_id: certId,
             user_id: user.id,
             interview_id: insertData.id,
             issue_date: new Date().toISOString(),
+            is_valid: true,
           }
         ])
         .select('id')

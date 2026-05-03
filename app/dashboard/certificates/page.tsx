@@ -77,7 +77,7 @@ export default function CertificatesPage() {
   if (!certificate) {
     return (
       <div className="min-h-screen bg-[#0e1417] text-white flex flex-col justify-center items-center gap-4">
-        <p className="text-gray-400">You haven't earned any certificates yet. Score 80+ in an interview to earn one!</p>
+        <p className="text-gray-400">You haven't earned any certificates yet. Score 75+ in an interview to earn one!</p>
         <Link href="/dashboard" className="bg-[#00d1ff] text-[#001f28] px-6 py-2 rounded-lg font-bold">Return to Dashboard</Link>
       </div>
     );
@@ -108,7 +108,7 @@ export default function CertificatesPage() {
             
             <PDFDownloadLink
               document={<CertificatePDF name={userName} role={role} score={score} date={dateIssued} certId={certificate.id} />}
-              fileName={`PrepAI_Certificate_${userName.replace(' ', '_')}.pdf`}
+              fileName={`SAKSHAM_Certificate_${userName.replace(' ', '_')}.pdf`}
               className="bg-[#00d1ff] text-[#001f28] hover:brightness-110 active:scale-95 transition-all px-6 py-2 rounded-lg font-bold flex items-center gap-2"
             >
               {({ loading }) => (
@@ -177,7 +177,7 @@ export default function CertificatesPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[#dde3e7] font-['Plus_Jakarta_Sans'] text-xl font-semibold italic border-b border-[#242424] pb-1">
-                      PrepAI Certification
+                      SAKSHAM.AI Certification
                     </div>
                     <p className="text-[#bbc9cf] text-xs font-medium uppercase tracking-wider mt-1">Authorized Signature</p>
                   </div>
@@ -226,13 +226,13 @@ export default function CertificatesPage() {
       </div>
 
       <footer className="flex flex-col items-center gap-4 w-full py-12 bg-[#121212] border-t border-[#242424] mt-10 text-xs">
-        <div className="font-bold text-[#00D1FF]">PrepAI</div>
+        <div className="font-bold text-[#00D1FF]">SAKSHAM.AI</div>
         <div className="flex gap-8 text-gray-600">
           <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-gray-300 transition-colors">Terms of Service</a>
           <a href="#" className="hover:text-gray-300 transition-colors">Contact</a>
         </div>
-        <p className="text-gray-500">© 2024 PrepAI. Professional Excellence.</p>
+        <p className="text-gray-500">© 2024 SAKSHAM.AI. Professional Excellence.</p>
       </footer>
     </div>
   );

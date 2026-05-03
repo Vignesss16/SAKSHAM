@@ -36,7 +36,8 @@ function ReportsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCompare, setShowCompare] = useState(false);
-  const [compareFile, setCompareFile] = useState<File | null>(null);
+  const [pastReports, setPastReports] = useState<any[]>([]);
+  const [selectedPastId, setSelectedPastId] = useState('');
   const [comparing, setComparing] = useState(false);
   const [compareResult, setCompareResult] = useState('');
 
@@ -72,42 +73,69 @@ function ReportsContent() {
     fetchReport();
   }, [id]);
 
+  // Fetch past reports for comparison selector
+  useEffect(() => {
+    if (!showCompare || pastReports.length > 0) return;
+    async function loadPast() {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('interviews')
+        .select('id, title, score, created_at, report_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      // Exclude the current report
+      setPastReports((data || []).filter(r => r.id !== report?.id));
+    }
+    loadPast();
+  }, [showCompare]);
+
   const handleCompare = async () => {
-    if (!compareFile || !report) return;
+    if (!selectedPastId || !report) return;
+    const past = pastReports.find(r => r.id === selectedPastId);
+    if (!past) return;
     setComparing(true);
     setCompareResult('');
     try {
-      const text = await compareFile.text();
-      const currentReport = JSON.stringify(report.report_data || {});
+      const reportData = report.report_data || {};
+      const strengths = reportData.strengths || [];
+      const improvements = reportData.improvements || [];
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: `You are an interview coach. Compare these two interview reports and tell me:
-1. Overall score improvement (%)
+          messages: [{
+            role: 'user',
+            content: `You are an interview coach. Compare these two interview reports and tell me:
+1. Overall score improvement (${past.score} → ${report.score}, ${report.score - past.score > 0 ? '+' : ''}${report.score - past.score} points)
 2. Change in each metric (Content Quality, Clarity, Confidence, Technical Accuracy)
 3. What improved most
 4. What still needs work
 5. A motivational summary
 
-Previous Report:
-${text}
+Previous Report (${new Date(past.created_at).toLocaleDateString()}, Score: ${past.score}/100):
+${JSON.stringify(past.report_data?.metrics || [], null, 2)}
+Strengths: ${JSON.stringify(past.report_data?.strengths?.map((s: any) => s.title) || [])}
+Improvements: ${JSON.stringify(past.report_data?.improvements?.map((i: any) => i.title) || [])}
 
-Current Report:
-${currentReport}
+Current Report (${new Date(report.created_at).toLocaleDateString()}, Score: ${report.score}/100):
+${JSON.stringify(reportData.metrics || [], null, 2)}
+Strengths: ${JSON.stringify(strengths.map((s: any) => s.title))}
+Improvements: ${JSON.stringify(improvements.map((i: any) => i.title))}
 
 Be specific with numbers and give a warm, coach-like response.`
-            }
-          ]
+          }]
         })
       });
       const data = await res.json();
       setCompareResult(data.text || data.message || 'Comparison complete.');
     } catch (err: any) {
-      setCompareResult('Failed to compare reports: ' + err.message);
+      setCompareResult('Failed to compare: ' + err.message);
     } finally {
       setComparing(false);
     }
@@ -224,22 +252,32 @@ Be specific with numbers and give a warm, coach-like response.`
               <span className="material-symbols-outlined text-[#00d1ff]">compare_arrows</span>
               Progress Comparison
             </h3>
-            <p className="text-sm text-[#859399]">Upload a previous report (JSON file from your browser or copy-paste the JSON) to compare your progress.</p>
+            <p className="text-sm text-[#859399]">Select a previous interview from your history to compare your progress — no file upload needed.</p>
             <div className="flex items-center gap-4">
-              <label className="flex-1 border-2 border-dashed border-[#3c494e] rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:border-[#00d1ff] transition-colors">
-                <span className="material-symbols-outlined text-[#00d1ff]">upload_file</span>
-                <span className="text-sm text-[#bbc9cf]">{compareFile ? compareFile.name : 'Upload previous report JSON'}</span>
-                <input type="file" accept=".json,.txt" className="hidden" onChange={e => setCompareFile(e.target.files?.[0] || null)} />
-              </label>
+              <select
+                value={selectedPastId}
+                onChange={e => setSelectedPastId(e.target.value)}
+                className="flex-1 bg-[#0e1417] border border-[#3c494e] rounded-xl px-4 py-3 text-sm text-[#dde3e7] focus:border-[#00d1ff] outline-none"
+              >
+                <option value="">— Select a previous interview —</option>
+                {pastReports.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.title || 'Interview'} · Score: {r.score ?? '--'} · {new Date(r.created_at).toLocaleDateString()}
+                  </option>
+                ))}
+              </select>
               <button
                 onClick={handleCompare}
-                disabled={!compareFile || comparing}
-                className="px-6 py-3 bg-[#00d1ff] text-[#001f28] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={!selectedPastId || comparing}
+                className="px-6 py-3 bg-[#00d1ff] text-[#001f28] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
               >
                 {comparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="material-symbols-outlined text-sm">psychology</span>}
                 {comparing ? 'Analyzing...' : 'Compare'}
               </button>
             </div>
+            {pastReports.length === 0 && (
+              <p className="text-xs text-[#ffb4ab]">No other interview reports found. Complete more interviews to compare progress.</p>
+            )}
             {compareResult && (
               <div className="bg-[#0e1417] rounded-xl p-6 border border-[#242424]">
                 <div className="flex items-center gap-2 mb-3">
