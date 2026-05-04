@@ -189,11 +189,11 @@ export default function DashboardLayout({
         <header className="top-header sticky top-0">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative max-w-[400px] w-full" ref={searchRef}>
-              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-[var(--c-muted)] pointer-events-none">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[var(--c-muted)] pointer-events-none">
                 search
               </span>
               <input
-                className="field pl-11 pr-10"
+                className="field !pl-12 pr-10"
                 type="text"
                 placeholder="Search pages, features..."
                 value={searchQuery}
