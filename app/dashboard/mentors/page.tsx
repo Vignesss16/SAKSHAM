@@ -13,7 +13,7 @@ type Mentor = {
   rating: number;
   total_reviews: number;
   hourly_rate: number;
-  profiles: { avatar_url: string };
+  profiles: { avatar_url: string } | { avatar_url: string }[];
 };
 
 export default function MentorsPage() {
@@ -72,13 +72,18 @@ export default function MentorsPage() {
           {mentors.map((mentor) => (
             <div key={mentor.user_id} className="glass p-6 flex flex-col h-full">
               <div className="flex items-center gap-4 mb-4">
-                {mentor.profiles?.avatar_url ? (
-                  <img src={mentor.profiles.avatar_url} alt={mentor.full_name} className="w-14 h-14 rounded-full object-cover border-2 border-[var(--c-primary)]" />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-bold text-[#001f28] text-lg">
-                    {mentor.full_name.charAt(0)}
-                  </div>
-                )}
+                {(() => {
+                  const profiles = mentor.profiles;
+                  const avatarUrl = Array.isArray(profiles) ? profiles[0]?.avatar_url : profiles?.avatar_url;
+                  
+                  return avatarUrl ? (
+                    <img src={avatarUrl} alt={mentor.full_name} className="w-14 h-14 rounded-full object-cover border-2 border-[var(--c-primary)]" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-bold text-[#001f28] text-lg">
+                      {mentor.full_name.charAt(0)}
+                    </div>
+                  );
+                })()}
                 <div>
                   <h3 className="font-bold text-[var(--c-text)] font-['Plus_Jakarta_Sans'] text-lg line-clamp-1">{mentor.full_name}</h3>
                   <div className="text-sm text-[var(--c-primary)] font-semibold line-clamp-1">
