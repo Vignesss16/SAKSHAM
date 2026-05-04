@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+import { RtcTokenBuilder, RtcRole } from 'agora-token';
 
 export async function GET(req: Request) {
   try {
@@ -29,6 +29,7 @@ export async function GET(req: Request) {
       channelName,
       parseInt(uid, 10),
       role,
+      privilegeExpiredTs,
       privilegeExpiredTs
     );
 
