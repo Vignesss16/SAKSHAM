@@ -188,18 +188,21 @@ export default function DashboardLayout({
         {/* Top header */}
         <header className="top-header sticky top-0">
           <div className="flex items-center gap-4 flex-1">
-            <div className="relative max-w-[360px] w-full" ref={searchRef}>
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[var(--c-muted)]">
+            <div className="relative max-w-[400px] w-full" ref={searchRef}>
+              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-[var(--c-muted)] pointer-events-none">
                 search
               </span>
               <input
-                className="field pl-10"
+                className="field pl-11 pr-10"
                 type="text"
                 placeholder="Search pages, features..."
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setShowSearch(true); }}
                 onFocus={() => setShowSearch(true)}
               />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-[var(--c-border)] bg-[var(--c-bg2)] text-[10px] text-[var(--c-muted)] font-bold pointer-events-none">
+                /
+              </div>
               {showSearch && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1A1A] border border-[var(--c-border)] rounded-xl shadow-2xl z-50 overflow-hidden">
                   {searchResults.map((r) => (
