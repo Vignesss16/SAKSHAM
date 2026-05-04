@@ -2,11 +2,54 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell, ReferenceLine } from 'recharts';
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+}
+
+function SkillsRadarChart({ data }: { data: any[] }) {
+  return (
+    <div className="mt-3 bg-[#0e1417] rounded-xl p-5 border border-[#242424] w-full h-[320px] shadow-inner">
+      <p className="text-xs font-bold text-[#44e2cd] mb-4 uppercase tracking-widest flex items-center gap-2">
+        <span className="material-symbols-outlined text-[16px]">psychology</span> Skills Profile
+      </p>
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+          <PolarGrid stroke="#2d373b" strokeWidth={0.5} />
+          <PolarAngleAxis 
+            dataKey="metric" 
+            tick={{ fill: '#859399', fontSize: 11, fontWeight: 500 }}
+          />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+          <Radar
+            name="Previous"
+            dataKey="past"
+            stroke="#4a5559"
+            strokeWidth={2}
+            fill="#4a5559"
+            fillOpacity={0.3}
+          />
+          <Radar
+            name="Current"
+            dataKey="current"
+            stroke="#00d1ff"
+            strokeWidth={3}
+            fill="#00d1ff"
+            fillOpacity={0.4}
+          />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#1a2123', borderColor: '#3c494e', borderRadius: '12px', fontSize: '12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+            labelStyle={{ color: '#dde3e7', fontWeight: 'bold', marginBottom: '4px' }}
+            itemStyle={{ color: '#00d1ff' }}
+          />
+          <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }} />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }
 
 interface ChatSession {
@@ -84,6 +127,64 @@ function ScoreCircle({ score }: { score: number }) {
   );
 }
 
+function ComparisonChart({ data }: { data: any[] }) {
+  const deltaData = data.map(d => ({
+    metric: d.metric,
+    delta: d.current - d.past
+  }));
+
+  const maxDelta = Math.max(...deltaData.map(d => Math.abs(d.delta)), 5);
+
+  return (
+    <div className="mt-3 bg-[#0e1417] rounded-xl p-5 border border-[#242424] w-full h-[320px] shadow-inner">
+      <p className="text-xs font-bold text-[#00d1ff] mb-4 uppercase tracking-widest flex items-center gap-2">
+        <span className="material-symbols-outlined text-[16px]">trending_up</span> Improvement Delta
+      </p>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={deltaData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#242424" vertical={false} />
+          <XAxis 
+            dataKey="metric" 
+            stroke="#859399" 
+            fontSize={11} 
+            tickLine={false} 
+            axisLine={false}
+            tick={{ dy: 10, fontWeight: 500 }}
+          />
+          <YAxis 
+            stroke="#859399" 
+            fontSize={11} 
+            tickLine={false} 
+            axisLine={false} 
+            domain={[-maxDelta - 2, maxDelta + 2]}
+          />
+          <Tooltip
+            cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+            contentStyle={{ backgroundColor: '#1a2123', borderColor: '#3c494e', borderRadius: '12px', fontSize: '12px', padding: '10px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+            labelStyle={{ color: '#dde3e7', fontWeight: 'bold', marginBottom: '4px' }}
+            itemStyle={{ color: '#44e2cd' }}
+            formatter={(value: any) => [`${value > 0 ? '+' : ''}${value} points`, 'Growth']}
+          />
+          <ReferenceLine y={0} stroke="#3c494e" strokeWidth={2} />
+          <Bar 
+            dataKey="delta" 
+            name="Score Change"
+            barSize={40}
+          >
+            {deltaData.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.delta >= 0 ? '#44e2cd' : '#ef4444'} 
+                className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export const AIChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -100,8 +201,48 @@ export const AIChatbot = () => {
   const [loadingReport, setLoadingReport] = useState(false);
   const [showViz, setShowViz] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
+  const [showReportSelect, setShowReportSelect] = useState(false);
+  const [pastReports, setPastReports] = useState<any[]>([]);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: position.x,
+      initialY: position.y
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      setPosition({
+        x: dragRef.current.initialX + dx,
+        y: dragRef.current.initialY + dy
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
   const messages = activeSession.messages;
@@ -113,9 +254,51 @@ export const AIChatbot = () => {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { if (isOpen) scrollToBottom(); }, [messages, isOpen]);
 
+  // Fetch all chat sessions on mount
+  useEffect(() => {
+    const fetchSessions = async () => {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: dbSessions } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (dbSessions && dbSessions.length > 0) {
+        const formattedSessions = await Promise.all(dbSessions.map(async (s) => {
+          const { data: dbMessages } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('session_id', s.id)
+            .order('created_at', { ascending: true });
+
+          return {
+            id: s.id,
+            name: s.name,
+            createdAt: new Date(s.created_at).getTime(),
+            messages: dbMessages?.map(m => ({
+              id: m.id,
+              role: m.role,
+              content: m.content
+            })) || [WELCOME_MSG]
+          };
+        }));
+        setSessions(formattedSessions);
+        setActiveSessionId(formattedSessions[0].id);
+      }
+    };
+    fetchSessions();
+  }, []);
+
   // Load latest report from Supabase
-  const loadReport = async () => {
+  const loadReport = async (reportId?: string) => {
     setLoadingReport(true);
+    setShowReportSelect(false);
     try {
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -123,13 +306,15 @@ export const AIChatbot = () => {
       );
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { data } = await supabase
-        .from('interviews')
-        .select('title, score, feedback, report_data')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      
+      let query = supabase.from('interviews').select('title, score, feedback, report_data').eq('user_id', user.id);
+      if (reportId) {
+        query = query.eq('id', reportId);
+      } else {
+        query = query.order('created_at', { ascending: false }).limit(1);
+      }
+      
+      const { data } = await query.maybeSingle();
 
       if (!data) {
         addBotMessage("I couldn't find any interview reports yet. Complete an interview first! 🎤");
@@ -156,24 +341,84 @@ export const AIChatbot = () => {
     }
   };
 
-  const addBotMessage = (content: string, metrics?: { label: string; score: number }[]) => {
+  const loadAllReports = async () => {
+    if (showReportSelect) {
+      setShowReportSelect(false);
+      return;
+    }
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('interviews')
+        .select('id, title, score, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) setPastReports(data);
+      setShowReportSelect(true);
+      setShowSessions(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const addBotMessage = async (content: string, metrics?: { label: string; score: number }[]) => {
+    const fullContent = metrics ? `__METRICS__${JSON.stringify(metrics)}__\n${content}` : content;
     const msg: Message = {
       id: Date.now().toString(),
       role: "assistant",
-      content: metrics ? `__METRICS__${JSON.stringify(metrics)}__\n${content}` : content,
+      content: fullContent,
     };
     updateSession(activeSessionId, s => ({ ...s, messages: [...s.messages, msg] }));
+
+    // Save to DB
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    if (activeSessionId !== 'default') {
+      await supabase.from('chat_messages').insert({
+        session_id: activeSessionId,
+        role: 'assistant',
+        content: fullContent
+      });
+    }
   };
 
-  const newChat = () => {
-    const id = Date.now().toString();
-    setSessions(prev => [{
-      id,
-      name: 'New Chat',
-      messages: [WELCOME_MSG],
-      createdAt: Date.now(),
-    }, ...prev]);
-    setActiveSessionId(id);
+  const newChat = async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: newSess } = await supabase.from('chat_sessions').insert({
+      user_id: user.id,
+      name: 'New Chat'
+    }).select().single();
+
+    if (newSess) {
+      setSessions(prev => [{
+        id: newSess.id,
+        name: 'New Chat',
+        messages: [WELCOME_MSG],
+        createdAt: Date.now(),
+      }, ...prev]);
+      setActiveSessionId(newSess.id);
+      
+      // Save welcome message
+      await supabase.from('chat_messages').insert({
+        session_id: newSess.id,
+        role: 'assistant',
+        content: WELCOME_MSG.content
+      });
+    }
+    
     setShowSessions(false);
     setReportCtx(null);
     setShowViz(false);
@@ -186,23 +431,73 @@ export const AIChatbot = () => {
     setInput("");
     setIsLoading(true);
 
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    let currentSessId = activeSessionId;
+    
+    // Create session if still default
+    if (currentSessId === 'default') {
+      const { data: newSess } = await supabase.from('chat_sessions').insert({
+        user_id: user.id,
+        name: text.substring(0, 40)
+      }).select().single();
+      
+      if (newSess) {
+        currentSessId = newSess.id;
+        setActiveSessionId(newSess.id);
+        // Save initial welcome message for this new session too
+        await supabase.from('chat_messages').insert({
+          session_id: newSess.id,
+          role: 'assistant',
+          content: WELCOME_MSG.content
+        });
+      }
+    }
+
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-    // Auto-rename session based on first real user message
-    updateSession(activeSessionId, s => ({
+    
+    // Optimistic Update
+    updateSession(activeSessionId === 'default' ? currentSessId : activeSessionId, s => ({
       ...s,
+      id: currentSessId,
       messages: [...s.messages, userMsg],
       name: s.name === 'New Chat' ? text.substring(0, 40) : s.name,
     }));
 
+    // Save user message to DB
+    await supabase.from('chat_messages').insert({
+      session_id: currentSessId,
+      role: 'user',
+      content: text
+    });
+
+    // Update session name in DB if it was New Chat
+    if (activeSession.name === 'New Chat') {
+      await supabase.from('chat_sessions').update({ name: text.substring(0, 40) }).eq('id', currentSessId);
+    }
+
     const botMsgId = (Date.now() + 1).toString();
-    updateSession(activeSessionId, s => ({
+    updateSession(currentSessId, s => ({
       ...s,
       messages: [...s.messages, { id: botMsgId, role: "assistant", content: "" }],
     }));
 
     // Build context-aware system message
     const systemContext = reportCtx
-      ? `You are SAKSHAM.AI, an expert interview coach. The user's latest report:\n- Title: ${reportCtx.title}\n- Overall Score: ${reportCtx.score}/100\n- Summary: ${reportCtx.summary}\n- Metrics: ${JSON.stringify(reportCtx.metrics)}\n- Strengths: ${JSON.stringify(reportCtx.strengths)}\n- Improvements needed: ${JSON.stringify(reportCtx.improvements)}\nGive specific, actionable coaching based on this data.`
+      ? `You are SAKSHAM.AI, an expert interview coach.
+The user is currently reviewing this report: "${reportCtx.title}".
+- Overall Score: ${reportCtx.score}/100
+- Summary: ${reportCtx.summary}
+- Metrics: ${JSON.stringify(reportCtx.metrics)}
+- Strengths: ${JSON.stringify(reportCtx.strengths)}
+- Improvements needed: ${JSON.stringify(reportCtx.improvements)}
+
+CRITICAL: Refer to this interview by its title "${reportCtx.title}" throughout the conversation. Give specific, actionable coaching based on this data.`
       : "You are SAKSHAM.AI, an expert interview coach helping candidates improve their interview skills. Be concise, warm, and actionable.";
 
     try {
@@ -211,6 +506,8 @@ export const AIChatbot = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system: systemContext,
+          isCompare: text.toLowerCase().includes("compare"),
+          stream: true,
           messages: [...messages, userMsg].map(m => ({
             role: m.role,
             content: m.content.replace(/^__METRICS__.*__\n/, ''), // strip metric markers
@@ -221,6 +518,8 @@ export const AIChatbot = () => {
       if (!response.ok) throw new Error("Failed to fetch response");
       const reader = response.body?.getReader();
       const decoder = new TextDecoder("utf-8");
+      let fullBotResponse = "";
+
       if (reader) {
         let done = false;
         while (!done) {
@@ -228,7 +527,8 @@ export const AIChatbot = () => {
           done = readerDone;
           if (value) {
             const chunk = decoder.decode(value, { stream: true });
-            updateSession(activeSessionId, s => ({
+            fullBotResponse += chunk;
+            updateSession(currentSessId, s => ({
               ...s,
               messages: s.messages.map(msg =>
                 msg.id === botMsgId ? { ...msg, content: msg.content + chunk } : msg
@@ -236,9 +536,16 @@ export const AIChatbot = () => {
             }));
           }
         }
+        
+        // Save full bot response to DB
+        await supabase.from('chat_messages').insert({
+          session_id: currentSessId,
+          role: 'assistant',
+          content: fullBotResponse
+        });
       }
     } catch {
-      updateSession(activeSessionId, s => ({
+      updateSession(currentSessId, s => ({
         ...s,
         messages: s.messages.map(msg =>
           msg.id === botMsgId ? { ...msg, content: "Sorry, I encountered an error. Please try again." } : msg
@@ -259,12 +566,14 @@ export const AIChatbot = () => {
       {/* FAB */}
       <button
         id="ai-coach-fab"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all z-50 ${
-          isOpen ? "bg-[#242b2e] text-[#dde3e7] rotate-90 scale-90" : "bg-[#00d1ff] text-[#001f28] hover:scale-110"
+        onMouseDown={handleDragStart}
+        onClick={() => { if (!isDragging) setIsOpen(!isOpen); }}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all z-[60] cursor-move ${
+          isOpen ? "bg-[#242b2e] text-[#dde3e7] rotate-90 scale-90" : "bg-[#00d1ff] text-[#001f28] hover:scale-110 active:scale-95"
         }`}
       >
-        <span className="material-symbols-outlined text-2xl">{isOpen ? "close" : "smart_toy"}</span>
+        <span className="material-symbols-outlined text-2xl pointer-events-none">{isOpen ? "close" : "smart_toy"}</span>
       </button>
 
       {/* Chat Window */}
@@ -283,16 +592,24 @@ export const AIChatbot = () => {
             <div className="flex items-center gap-1 shrink-0">
               {/* Load Report */}
               <button
-                onClick={loadReport}
+                onClick={() => loadReport()}
                 disabled={loadingReport}
                 title="Load latest report"
                 className="p-1.5 text-[#859399] hover:text-[#00d1ff] hover:bg-[#00d1ff]/10 rounded-lg transition-colors text-[11px] flex items-center gap-1"
               >
                 {loadingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="material-symbols-outlined text-[18px]">analytics</span>}
               </button>
+              {/* Select Report */}
+              <button
+                onClick={loadAllReports}
+                title="Select a Report"
+                className="p-1.5 text-[#859399] hover:text-[#00d1ff] hover:bg-[#00d1ff]/10 rounded-lg transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">folder_open</span>
+              </button>
               {/* Sessions */}
               <button
-                onClick={() => setShowSessions(!showSessions)}
+                onClick={() => { setShowSessions(!showSessions); setShowReportSelect(false); }}
                 title="Chat history"
                 className="p-1.5 text-[#859399] hover:text-[#00d1ff] hover:bg-[#00d1ff]/10 rounded-lg transition-colors"
               >
@@ -326,7 +643,7 @@ export const AIChatbot = () => {
 
           {/* Sessions Sidebar */}
           {showSessions && (
-            <div className="absolute top-[57px] left-0 w-full bg-[#0e1417] border-b border-[#242424] z-10 max-h-48 overflow-y-auto">
+            <div className="absolute top-[57px] left-0 w-full bg-[#0e1417] border-b border-[#242424] z-10 max-h-48 overflow-y-auto shadow-2xl">
               <div className="p-2 space-y-1">
                 {sessions.map(s => (
                   <button
@@ -338,6 +655,40 @@ export const AIChatbot = () => {
                     {s.name}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Report Selection Sidebar */}
+          {showReportSelect && (
+            <div className="absolute top-[57px] left-0 w-full bg-[#0e1417] border-b border-[#242424] z-10 max-h-64 overflow-y-auto shadow-2xl">
+              <div className="p-3 border-b border-[#242424] flex items-center justify-between bg-[#1a2123]">
+                <span className="text-[10px] font-bold text-[#00d1ff] uppercase tracking-widest">Select Interview to Load</span>
+                <button onClick={() => setShowReportSelect(false)} className="text-[#859399] hover:text-white">
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+              <div className="p-2 space-y-1">
+                {pastReports.length === 0 ? (
+                  <p className="text-xs text-[#859399] p-4 text-center italic">No reports found.</p>
+                ) : (
+                  pastReports.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => loadReport(r.id)}
+                      className="w-full text-left px-3 py-2.5 rounded-lg text-sm group transition-all hover:bg-[#00d1ff]/5 border border-transparent hover:border-[#00d1ff]/20"
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-[#dde3e7] truncate group-hover:text-[#00d1ff] transition-colors">{r.title}</span>
+                        <span className="text-[10px] text-[#44e2cd] font-bold bg-[#44e2cd]/10 px-1.5 py-0.5 rounded">Score: {r.score}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-[#859399]">
+                        <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -375,23 +726,36 @@ export const AIChatbot = () => {
             {messages.map((msg) => {
               // Detect embedded metrics
               const hasMetrics = msg.content.startsWith('__METRICS__');
+              const hasCompare = msg.content.includes('__COMPARE_DATA__');
               let metricsData: { label: string; score: number }[] = [];
+              let compareData: any[] = [];
               let displayContent = msg.content;
+              
               if (hasMetrics) {
-                const match = msg.content.match(/^__METRICS__(.+)__\n([\s\S]*)$/);
+                const match = displayContent.match(/^__METRICS__(.+)__\n([\s\S]*)$/);
                 if (match) {
                   try { metricsData = JSON.parse(match[1]); } catch {}
                   displayContent = match[2];
                 }
               }
 
+              if (hasCompare) {
+                const match = displayContent.match(/__COMPARE_DATA__([\s\S]*?)__COMPARE_DATA__/);
+                if (match) {
+                  try {
+                    compareData = JSON.parse(match[1]);
+                    displayContent = displayContent.replace(/__COMPARE_DATA__[\s\S]*?__COMPARE_DATA__/, '').trim();
+                  } catch {}
+                }
+              }
+
               return (
-                <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} w-full`}>
                   <div
-                    className={`max-w-[90%] p-3 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[85%] ${isMaximized ? 'xl:max-w-[70%]' : ''} p-4 rounded-2xl text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-[#00d1ff] text-[#001f28] rounded-tr-sm font-medium"
-                        : "bg-[#1a2123] text-[#dde3e7] border border-[#3c494e] rounded-tl-sm"
+                        ? "bg-[#00d1ff] text-[#001f28] rounded-tr-sm font-medium shadow-[0_0_15px_rgba(0,209,255,0.2)]"
+                        : "bg-[#1a2123] text-[#dde3e7] border border-[#3c494e] rounded-tl-sm shadow-lg"
                     }`}
                   >
                     {msg.content === "" ? (
@@ -402,6 +766,12 @@ export const AIChatbot = () => {
                       <span dangerouslySetInnerHTML={{ __html: renderMarkdown(displayContent) }} />
                     )}
                     {metricsData.length > 0 && <MiniBarChart metrics={metricsData} />}
+                    {compareData.length > 0 && (
+                      <div className={`mt-4 grid gap-4 ${isMaximized ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        <SkillsRadarChart data={compareData} />
+                        <ComparisonChart data={compareData} />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -413,7 +783,7 @@ export const AIChatbot = () => {
           {messages.length <= 2 && (
             <div className="px-4 pb-2 flex gap-2 flex-wrap shrink-0">
               {[
-                { icon: "analytics", label: "Load my report", action: loadReport },
+                { icon: "analytics", label: "Load my report", action: () => loadReport() },
                 { icon: "compare_arrows", label: "Compare reports", action: () => setInput("Compare my last two interviews and tell me my progress") },
                 { icon: "tips_and_updates", label: "Improve clarity", action: () => setInput("How can I improve my communication clarity in interviews?") },
               ].map(q => (

@@ -17,7 +17,7 @@ export default function HomePage() {
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 20, color: 'var(--c-primary)', letterSpacing: '-0.02em' }}>PrepAI</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 20, color: 'var(--c-primary)', letterSpacing: '-0.02em' }}>SAKSHAM.AI</div>
             <div style={{ display: 'flex', gap: 28 }} className="hidden md:flex">
               {['Features', 'Pricing', 'About'].map(item => (
                 <a key={item} href="#" style={{ color: 'var(--c-muted)', textDecoration: 'none', fontSize: 14, fontFamily: "'Plus Jakarta Sans'", fontWeight: 500, transition: 'color 0.2s' }}
@@ -222,7 +222,7 @@ export default function HomePage() {
       <section style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto' }}>
         <div className="ai-border" style={{ padding: 60, textAlign: 'center', background: 'linear-gradient(135deg,rgba(0,209,255,0.05),rgba(68,226,205,0.03))' }}>
           <h2 style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 'clamp(28px,4vw,44px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.02em' }}>Ready to land your dream job?</h2>
-          <p style={{ color: 'var(--c-muted)', fontSize: 17, maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.7 }}>Join 12,000+ students who have already transformed their interview skills with PrepAI.</p>
+          <p style={{ color: 'var(--c-muted)', fontSize: 17, maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.7 }}>Join 12,000+ students who have already transformed their interview skills with SAKSHAM.AI.</p>
           <Link href="/login" className="btn-primary" style={{ fontSize: 16, padding: '16px 36px' }}>
             Start Free Today
             <span className="material-symbols-outlined">arrow_forward</span>
@@ -233,13 +233,13 @@ export default function HomePage() {
       {/* ── FOOTER ── */}
       <footer style={{ background: 'var(--c-bg1)', borderTop: '1px solid var(--c-border)', padding: '48px 32px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans'", fontWeight: 800, fontSize: 20, color: 'var(--c-primary)' }}>PrepAI</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans'", fontWeight: 800, fontSize: 20, color: 'var(--c-primary)' }}>SAKSHAM.AI</div>
           <div style={{ display: 'flex', gap: 28 }}>
             {['Privacy Policy', 'Terms of Service', 'Contact'].map(l => (
               <a key={l} href="#" style={{ color: 'var(--c-muted)', fontSize: 13, textDecoration: 'none' }}>{l}</a>
             ))}
           </div>
-          <div style={{ color: 'var(--c-muted)', fontSize: 13 }}>© 2024 PrepAI. All rights reserved.</div>
+          <div style={{ color: 'var(--c-muted)', fontSize: 13 }}>© 2024 SAKSHAM.AI. All rights reserved.</div>
         </div>
       </footer>
     </div>

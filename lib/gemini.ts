@@ -36,9 +36,20 @@ async function callGroq(messages: any[], isJSON: boolean = false) {
 
 export const geminiFlash = {
   model: MODEL,
-  generateContent: async (prompt: any) => {
-    const text = typeof prompt === 'string' ? prompt : (prompt.contents?.[0]?.parts?.[0]?.text || JSON.stringify(prompt));
-    const resultText = await callGroq([{ role: 'user', content: text }]);
+  generateContent: async (config: any) => {
+    let messages = [];
+    if (typeof config === 'string') {
+      messages = [{ role: 'user', content: config }];
+    } else if (config.contents) {
+      messages = config.contents.map((c: any) => ({
+        role: c.role === 'model' ? 'assistant' : 'user',
+        content: c.parts[0].text
+      }));
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(config) }];
+    }
+
+    const resultText = await callGroq(messages);
     return {
       response: {
         text: () => resultText

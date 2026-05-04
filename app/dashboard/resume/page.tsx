@@ -417,8 +417,8 @@ export default function ResumePage() {
 
       {/* Sticky bottom bar */}
       <div
-        className="fixed bottom-0 left-64 right-0 p-6 bg-[#0e1417]/80 backdrop-blur-lg border-t border-[#242424] flex justify-end gap-6"
-        style={{ zIndex: 30, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        className="fixed bottom-0 left-64 right-0 p-6 bg-[#0e1417]/80 backdrop-blur-lg border-t border-[#242424] flex justify-end gap-6 pr-24"
+        style={{ zIndex: 40, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
       >
         {(fileUploaded || analysis || error) && (
           <button onClick={resetForm} className="px-6 py-2.5 rounded-lg text-[#dde3e7] border border-[#3c494e] hover:bg-[#2f3639] transition-colors font-medium">

@@ -236,17 +236,17 @@ export const PdfReportTemplate = ({ report, score, metrics, strengths, improveme
       <Page size="A4" style={styles.page}>
         
         <View style={styles.watermarkContainer}>
-          <Text style={styles.watermarkText}>PREPAI</Text>
+          <Text style={styles.watermarkText}>SAKSHAM.AI</Text>
         </View>
 
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.headerTitle}>PrepAI Report</Text>
+            <Text style={styles.headerTitle}>SAKSHAM.AI Report</Text>
             <Text style={styles.headerSubtitle}>Candidate Evaluation Summary</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.headerDate}>{new Date().toLocaleDateString()}</Text>
-            <Text style={styles.headerId}>REF ID: {report.id?.substring(0, 8)}</Text>
+            <Text style={styles.headerDate}>{new Date(report.created_at || Date.now()).toLocaleDateString()}</Text>
+            <Text style={styles.headerId}>REF ID: {report.id?.substring(0, 8) || 'N/A'}</Text>
           </View>
         </View>
 
@@ -257,13 +257,22 @@ export const PdfReportTemplate = ({ report, score, metrics, strengths, improveme
             <Text style={styles.profileDesc}>{report.feedback || "Your report summary appears here."}</Text>
           </View>
           
-          <View style={styles.scoreBox}>
-            <Text style={styles.sectionLabel}>Overall Score</Text>
-            <View style={styles.scoreCircleContainer}>
-              <Text style={{ ...styles.scoreText, color: scoreColor }}>{score}</Text>
+          <View style={{ flexDirection: 'column', gap: 10 }}>
+            <View style={styles.scoreBox}>
+              <Text style={styles.sectionLabel}>Overall Score</Text>
+              <View style={styles.scoreCircleContainer}>
+                <Text style={{ ...styles.scoreText, color: scoreColor }}>{score}</Text>
+              </View>
+              <View style={{ backgroundColor: scoreColor + '20', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 4 }}>
+                 <Text style={{ ...styles.scoreBadge, color: scoreColor }}>{scoreLabel}</Text>
+              </View>
             </View>
-            <View style={{ backgroundColor: scoreColor + '20', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 4 }}>
-               <Text style={{ ...styles.scoreBadge, color: scoreColor }}>{scoreLabel}</Text>
+            
+            <View style={{ ...styles.scoreBox, padding: 10, height: 60 }}>
+              <Text style={styles.sectionLabel}>Credits Earned</Text>
+              <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#f59e0b', marginTop: 4 }}>
+                +{score >= 80 ? '2500 (Elite)' : score >= 60 ? '1000 (Advanced)' : '500 (Base)'}
+              </Text>
             </View>
           </View>
         </View>
@@ -318,7 +327,7 @@ export const PdfReportTemplate = ({ report, score, metrics, strengths, improveme
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Powered by PrepAI Engine</Text>
+          <Text style={styles.footerText}>Powered by SAKSHAM.AI Engine</Text>
           <Text style={styles.footerText}>Confidential Assessment</Text>
         </View>
 

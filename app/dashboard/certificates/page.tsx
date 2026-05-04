@@ -163,17 +163,14 @@ export default function CertificatesPage() {
                     <p className="text-[#dde3e7] font-['Plus_Jakarta_Sans'] text-xl font-semibold mt-1">{dateIssued}</p>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="bg-white p-2 rounded-lg mb-2">
-                      <div className="w-24 h-24 bg-[#2f3639] relative flex items-center justify-center">
-                        <div className="grid grid-cols-3 gap-1 p-2">
-                          {[1,1,1,1,0,1,1,1,1].map((v,i) => (
-                            <div key={i} className={`w-3 h-3 ${v ? "bg-black" : "bg-transparent"}`}></div>
-                          ))}
-                        </div>
-                        <div className="absolute inset-0 border-4 border-white"></div>
-                      </div>
+                    <div className="bg-white p-2 rounded-lg mb-2 shadow-lg">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${certificate.id}`)}`} 
+                        alt="Verification QR Code"
+                        className="w-24 h-24"
+                      />
                     </div>
-                    <p className="text-[#bbc9cf] text-xs font-medium uppercase tracking-wider">Verification ID: {certificate.id.substring(0,8)}</p>
+                    <p className="text-[#bbc9cf] text-[10px] font-mono uppercase tracking-wider">Verification ID: {certificate.id}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-[#dde3e7] font-['Plus_Jakarta_Sans'] text-xl font-semibold italic border-b border-[#242424] pb-1">

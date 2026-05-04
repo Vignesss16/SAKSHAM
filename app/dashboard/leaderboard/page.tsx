@@ -1,20 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export const revalidate = 0;
 
 export default async function LeaderboardPage() {
-  const cookieStore = cookies();
-  const supabase = createServerClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
   const { data: profiles, error } = await supabase
@@ -39,8 +30,47 @@ export default async function LeaderboardPage() {
             Global Leaderboard
           </h1>
           <p className="text-[#bbc9cf] text-lg max-w-2xl">
-            See how you rank against other candidates — earn more credits by completing interviews.
+            See how you rank against other candidates — earn more credits by completing AI interviews and daily challenges.
           </p>
+        </div>
+
+        {/* Credits Evaluation System Breakdown */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-8">
+          <div className="glass p-5 rounded-2xl border-l-4 border-l-[#10b981] flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[#10b981]">workspace_premium</span>
+              <span className="text-[#10b981] font-bold text-sm uppercase tracking-wider">Elite Score (80+)</span>
+            </div>
+            <p className="text-[#bbc9cf] text-xs leading-relaxed mb-4">Complete an AI Interview with an exceptional score.</p>
+            <div className="text-2xl font-black text-white">+2500 <span className="text-sm font-normal text-gray-500">credits</span></div>
+          </div>
+          
+          <div className="glass p-5 rounded-2xl border-l-4 border-l-[#0ea5e9] flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[#0ea5e9]">thumb_up</span>
+              <span className="text-[#0ea5e9] font-bold text-sm uppercase tracking-wider">Advanced (60-79)</span>
+            </div>
+            <p className="text-[#bbc9cf] text-xs leading-relaxed mb-4">Complete an AI Interview with a proficient score.</p>
+            <div className="text-2xl font-black text-white">+1000 <span className="text-sm font-normal text-gray-500">credits</span></div>
+          </div>
+
+          <div className="glass p-5 rounded-2xl border-l-4 border-l-[#00d1ff] flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[#00d1ff]">task_alt</span>
+              <span className="text-[#00d1ff] font-bold text-sm uppercase tracking-wider">Daily Challenge</span>
+            </div>
+            <p className="text-[#bbc9cf] text-xs leading-relaxed mb-4">Solve the daily DSA question without failing anti-cheat.</p>
+            <div className="text-2xl font-black text-white">+1000 <span className="text-sm font-normal text-gray-500">credits</span></div>
+          </div>
+
+          <div className="glass p-5 rounded-2xl border-l-4 border-l-[#f43f5e] flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[#f43f5e]">model_training</span>
+              <span className="text-[#f43f5e] font-bold text-sm uppercase tracking-wider">Base Score (&lt;60)</span>
+            </div>
+            <p className="text-[#bbc9cf] text-xs leading-relaxed mb-4">Complete an AI Interview and identify areas for focus.</p>
+            <div className="text-2xl font-black text-white">+500 <span className="text-sm font-normal text-gray-500">credits</span></div>
+          </div>
         </div>
 
         <div className="bg-[#1a2123] rounded-2xl border border-[#242424] shadow-2xl overflow-hidden">

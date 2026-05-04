@@ -7,6 +7,7 @@ import { AIChatbot } from "@/components/AIChatbot";
 
 const navItems = [
   { href: "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
+  { href: "/dashboard/daily", icon: "task_alt", label: "Daily Challenge" },
   { href: "/dashboard/new", icon: "mic", label: "AI Interview" },
   { href: "/dashboard/resume", icon: "description", label: "AI Resume Analyzer" },
   { href: "/dashboard/certificates", icon: "verified", label: "Certificates" },
@@ -17,6 +18,7 @@ const navItems = [
 
 const ALL_PAGES = [
   { label: "Dashboard", href: "/dashboard", desc: "Your home overview and stats" },
+  { label: "Daily Challenge", href: "/dashboard/daily", desc: "Solve daily questions to earn credits" },
   { label: "AI Interview", href: "/dashboard/new", desc: "Start a new mock interview session" },
   { label: "AI Resume Analyzer", href: "/dashboard/resume", desc: "Analyze and score your resume" },
   { label: "Certificates", href: "/dashboard/certificates", desc: "View earned certificates" },

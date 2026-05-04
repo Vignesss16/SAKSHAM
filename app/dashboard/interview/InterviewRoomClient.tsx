@@ -322,7 +322,7 @@ function InterviewContent({
       <header className="bg-[#121212] border-b border-[#242424] h-16 flex items-center justify-between px-8 z-50 shrink-0">
         <div className="flex items-center gap-10">
           <Link href="/dashboard" className="text-xl font-bold tracking-tight text-white font-['Plus_Jakarta_Sans']">
-            PrepAI
+            SAKSHAM.AI
           </Link>
           <span className="bg-[#00d1ff]/20 text-[#00d1ff] px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
             Live Interview
@@ -459,7 +459,7 @@ function InterviewContent({
               {messageList.map((msg, idx) => (
                 <div key={idx} className="flex flex-col gap-2">
                   <span className="text-xs text-[#859399]">
-                    {String(msg.uid) === agentUID ? 'PrepAI' : 'You'}
+                    {String(msg.uid) === agentUID ? 'SAKSHAM.AI' : 'You'}
                   </span>
                   <p className={`text-base leading-relaxed ${String(msg.uid) === agentUID ? 'text-[#bbc9cf]' : 'text-white'}`}>
                     {msg.text}
@@ -496,7 +496,7 @@ function InterviewContent({
       </div>
 
       <footer className="bg-[#121212] border-t border-[#242424] py-2 px-8 flex items-center justify-between shrink-0">
-        <span className="text-xs text-gray-600">© 2024 PrepAI. Professional Excellence.</span>
+        <span className="text-xs text-gray-600">© 2024 SAKSHAM.AI. Professional Excellence.</span>
         <div className="flex gap-6">
           <a href="#" className="text-xs text-gray-600 hover:text-gray-300 transition-colors">Privacy Policy</a>
           <a href="#" className="text-xs text-gray-600 hover:text-gray-300 transition-colors">Terms of Service</a>

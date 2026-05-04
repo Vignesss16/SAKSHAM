@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'PrepAI – Master Your Next Big Interview with AI',
+  title: 'SAKSHAM.AI – Master Your Next Big Interview with AI',
   description: 'AI-powered interview preparation. Practice with realistic mock interviews, get instant feedback, and land your dream job.',
 }
 

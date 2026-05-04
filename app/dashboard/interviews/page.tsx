@@ -1,14 +1,54 @@
 import Link from "next/link";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-const sessions = [
-  { id: 1, title: "Software Engineer – Backend Focus", date: "2 hours ago", duration: "45 min", score: 82, status: "Completed", icon: "code", iconColor: "text-[#00d1ff]" },
-  { id: 2, title: "Frontend Architecture Review", date: "Tomorrow, 10 AM", duration: "45 min", score: null, status: "Scheduled", icon: "web", iconColor: "text-[#44e2cd]" },
-  { id: 3, title: "Behavioral Interview Round", date: "Oct 20", duration: "32 min", score: 74, status: "Completed", icon: "psychology", iconColor: "text-[#ecd3ff]" },
-  { id: 4, title: "Data Structure Deep Dive", date: "Oct 24, 2:00 PM", duration: null, score: null, status: "Pending", icon: "data_object", iconColor: "text-[#00d1ff]" },
-  { id: 5, title: "System Design Round", date: "Oct 15", duration: "60 min", score: 91, status: "Completed", icon: "hub", iconColor: "text-[#44e2cd]" },
-];
+export const revalidate = 0;
 
-export default function InterviewsPage() {
+export default async function InterviewsPage() {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let interviews: any[] = [];
+  let certificatesCount = 0;
+
+  if (user) {
+    const { data } = await supabase
+      .from('interviews')
+      .select('id, title, score, created_at, status')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    interviews = data || [];
+
+    const { count } = await supabase
+      .from('certificates')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+      
+    certificatesCount = count || 0;
+  }
+
+  const completedInterviews = interviews.filter(i => i.score !== null);
+  const totalSessions = interviews.length;
+  const avgScore = completedInterviews.length > 0 
+    ? Math.round(completedInterviews.reduce((acc, curr) => acc + (curr.score || 0), 0) / completedInterviews.length)
+    : 0;
+  
+  // Estimate 45 mins per session
+  const hoursPracticed = (totalSessions * 45 / 60).toFixed(1);
+
   return (
     <div>
       <div className="flex justify-between items-end mb-7 flex-wrap gap-4">
@@ -29,10 +69,10 @@ export default function InterviewsPage() {
       {/* Stats */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 mb-7">
         {[
-          { label: "Total Sessions", value: "12", icon: "history_edu", color: "var(--c-primary)" },
-          { label: "Avg. Score", value: "79", icon: "analytics", color: "var(--c-secondary)" },
-          { label: "Hours Practiced", value: "8.5", icon: "schedule", color: "var(--c-tertiary)" },
-          { label: "Certificates", value: "3", icon: "workspace_premium", color: "var(--c-primary)" },
+          { label: "Total Sessions", value: totalSessions.toString(), icon: "history_edu", color: "var(--c-primary)" },
+          { label: "Avg. Score", value: avgScore.toString(), icon: "analytics", color: "var(--c-secondary)" },
+          { label: "Hours Practiced", value: hoursPracticed, icon: "schedule", color: "var(--c-tertiary)" },
+          { label: "Certificates", value: certificatesCount.toString(), icon: "workspace_premium", color: "var(--c-primary)" },
         ].map((s) => (
           <div key={s.label} className="stat-card" style={{ borderTopColor: s.color }}>
             <div className="flex justify-between items-start">
@@ -48,44 +88,62 @@ export default function InterviewsPage() {
       <div>
         <h3 className="font-['Plus_Jakarta_Sans'] text-lg font-bold mb-4">All Sessions</h3>
         <div className="glass overflow-hidden rounded-[14px]">
-          {sessions.map((s, i) => (
-            <div
-              key={s.id}
-              className={`px-5 py-4 flex items-center justify-between cursor-pointer transition-colors hover:bg-white/5 ${i < sessions.length - 1 ? "border-b border-[var(--c-border)]" : ""}`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 bg-[var(--c-bg3)] rounded-[10px] flex items-center justify-center shrink-0">
-                  <span className={`material-symbols-outlined text-[20px] ${s.iconColor}`}>{s.icon}</span>
-                </div>
-                <div>
-                  <div className="font-['Plus_Jakarta_Sans'] text-sm font-semibold text-[var(--c-text)]">{s.title}</div>
-                  <div className="text-xs text-[var(--c-muted)]">
-                    {s.date}{s.duration ? ` · ${s.duration}` : ""}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="font-['Plus_Jakarta_Sans'] text-[15px] font-bold text-[var(--c-text)]">
-                    {s.score !== null ? `${s.score}/100` : "--/--"}
-                  </div>
-                  <div className={`badge text-[9px] ${s.status === "Completed" ? "badge-teal" : s.status === "Scheduled" ? "badge-blue" : "badge-purple"}`}>
-                    {s.status}
-                  </div>
-                </div>
-                {s.status === "Completed" && (
-                  <Link href="/dashboard/reports" className="text-[var(--c-muted)] hover:text-[var(--c-primary)] transition-colors">
-                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                  </Link>
-                )}
-                {s.status !== "Completed" && (
-                  <Link href="/dashboard/new" className="text-[var(--c-muted)] hover:text-[var(--c-primary)] transition-colors">
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                  </Link>
-                )}
-              </div>
+          {interviews.length === 0 ? (
+            <div className="p-8 text-center text-[var(--c-muted)]">
+              No sessions found. Start a new interview to see your history!
             </div>
-          ))}
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--c-border)]">
+                  <th className="p-4 text-[13px] font-semibold text-[var(--c-muted)] uppercase tracking-wider">Role / Topic</th>
+                  <th className="p-4 text-[13px] font-semibold text-[var(--c-muted)] uppercase tracking-wider hidden sm:table-cell">Date</th>
+                  <th className="p-4 text-[13px] font-semibold text-[var(--c-muted)] uppercase tracking-wider">Score</th>
+                  <th className="p-4 text-[13px] font-semibold text-[var(--c-muted)] uppercase tracking-wider text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--c-border)]">
+                {interviews.map((session) => (
+                  <tr key={session.id} className="hover:bg-[rgba(255,255,255,0.02)] transition-colors group">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--c-bg)] border border-[var(--c-border)] flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[var(--c-primary)]">psychology</span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[var(--c-text)] text-[15px]">{session.title || 'Mock Interview'}</div>
+                          <div className="text-[13px] text-[var(--c-muted)] sm:hidden mt-0.5">
+                            {new Date(session.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-[14px] text-[var(--c-muted)] hidden sm:table-cell">
+                      {new Date(session.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="p-4">
+                      {session.score !== null ? (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[rgba(68,226,205,0.1)] text-[var(--c-secondary)] font-bold text-[13px]">
+                          {session.score} / 100
+                        </div>
+                      ) : (
+                        <span className="text-[13px] text-[var(--c-muted)] italic">Pending</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {session.score !== null ? (
+                        <Link href={`/dashboard/reports?id=${session.id}`} className="text-[13px] font-semibold text-[var(--c-primary)] hover:underline">
+                          View Report
+                        </Link>
+                      ) : (
+                        <span className="text-[13px] text-[var(--c-muted)]">Incomplete</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

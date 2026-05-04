@@ -112,7 +112,7 @@ function LoginContent() {
             </svg>
           </div>
           <span className="font-black text-xl" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'var(--c-text)' }}>
-            Prep<span style={{ color: 'var(--c-primary)' }}>AI</span>
+            SAKSHAM<span style={{ color: 'var(--c-primary)' }}>.AI</span>
           </span>
         </div>
 
@@ -149,7 +149,7 @@ function LoginContent() {
               </div>
             </div>
             <p className="text-sm text-[var(--c-muted)] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-              &ldquo;Used PrepAI for 2 weeks before my Amazon loop. Got L5 offer. The AI feedback was better than any human mock I did.&rdquo;
+              &ldquo;Used SAKSHAM.AI for 2 weeks before my Amazon loop. Got L5 offer. The AI feedback was better than any human mock I did.&rdquo;
             </p>
             <div className="flex gap-0.5 mt-3">
               {[...Array(5)].map((_, i) => (
@@ -177,7 +177,7 @@ function LoginContent() {
 
         {/* Bottom */}
         <div className="relative text-xs text-[var(--c-muted)]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          © 2024 PrepAI, Inc. · <a href="#" className="hover:text-[var(--c-text)] transition-colors">Privacy</a> · <a href="#" className="hover:text-[var(--c-text)] transition-colors">Terms</a>
+          © 2024 SAKSHAM.AI, Inc. · <a href="#" className="hover:text-[var(--c-text)] transition-colors">Privacy</a> · <a href="#" className="hover:text-[var(--c-text)] transition-colors">Terms</a>
         </div>
       </div>
 
@@ -201,7 +201,7 @@ function LoginContent() {
               </svg>
             </div>
             <span className="font-black text-lg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'var(--c-text)' }}>
-              Prep<span style={{ color: 'var(--c-primary)' }}>AI</span>
+              SAKSHAM<span style={{ color: 'var(--c-primary)' }}>.AI</span>
             </span>
           </div>
 
