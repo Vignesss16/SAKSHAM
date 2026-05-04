@@ -310,6 +310,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                     return { subject: label, score: m.score };
                   })}>
                     <PolarGrid stroke="#242424" />
+                    {/* @ts-expect-error - Recharts type incompatibility with React 18 */}
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#859399', fontSize: 8 }} />
                     <Tooltip 
                       content={({ active, payload }) => {
@@ -430,6 +431,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                         return null;
                       }}
                     />
+                    {/* @ts-expect-error - Recharts type incompatibility with React 18 */}
                     <Line 
                       type="monotone" 
                       dataKey="score" 
