@@ -19,6 +19,7 @@ function SkillsRadarChart({ data }: { data: any[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid stroke="#2d373b" strokeWidth={0.5} />
+          {/* @ts-ignore - Recharts type incompatibility with React 18 */}
           <PolarAngleAxis 
             dataKey="metric" 
             tick={{ fill: '#859399', fontSize: 11, fontWeight: 500 }}
