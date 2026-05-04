@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from "next/link";
-import { format } from "date-fns";
 
 type Booking = {
   id: string;
@@ -104,7 +103,10 @@ export default function SessionsPage() {
                     </div>
                     <div className="text-sm text-[var(--c-muted)] flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                      {format(new Date(session.scheduled_at), "PPPPp")}
+                      {new Intl.DateTimeFormat('en-US', { 
+                        dateStyle: 'full', 
+                        timeStyle: 'short' 
+                      }).format(new Date(session.scheduled_at))}
                     </div>
                   </div>
                 </div>
