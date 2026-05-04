@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const [toggles, setToggles] = useState([
     { label: "Email reminders for scheduled interviews", enabled: true },
@@ -30,16 +31,23 @@ export default function SettingsPage() {
         setUserId(user.id);
         setEmail(user.email || "");
         
-        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
-        if (profile?.full_name) {
-          setFullName(profile.full_name);
-        } else if (user.user_metadata?.full_name) {
+        const { data: profile } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle();
+        if (profile) {
+          if (profile.full_name) setFullName(profile.full_name);
+          if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
+        }
+        
+        // Fallback to metadata if profile is empty
+        if (!fullName && user.user_metadata?.full_name) {
           setFullName(user.user_metadata.full_name);
+        }
+        if (!avatarUrl && user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url);
         }
       }
     }
     loadProfile();
-  }, [supabase]);
+  }, [supabase, fullName, avatarUrl]);
 
   const toggleSetting = (index: number) => {
     const newToggles = [...toggles];
@@ -98,9 +106,13 @@ export default function SettingsPage() {
             <div className="glass p-6">
               <h3 className="font-['Plus_Jakarta_Sans'] text-lg font-bold mb-4">Profile</h3>
               <div className="flex items-center gap-5 mb-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-xl">
-                  {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
-                </div>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={fullName} className="w-16 h-16 rounded-full object-cover border-2 border-[var(--c-primary)]" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-['Plus_Jakarta_Sans'] font-bold text-[#001f28] text-xl">
+                    {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
                 <div>
                   <div className="font-['Plus_Jakarta_Sans'] font-bold text-[var(--c-text)]">{fullName || "User"}</div>
                   <div className="text-sm text-[var(--c-muted)]">{email}</div>
