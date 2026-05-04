@@ -62,6 +62,7 @@ export default function DashboardLayout({
 
   const [userName, setUserName] = useState("Student");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [userRole, setUserRole] = useState("Student");
   const [theme, setTheme] = useState('dark');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -94,10 +95,11 @@ export default function DashboardLayout({
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).maybeSingle();
+        const { data } = await supabase.from("profiles").select("full_name, avatar_url, role").eq("id", user.id).maybeSingle();
         if (data) {
           setUserName(data.full_name || user.user_metadata?.full_name || "Student");
           setAvatarUrl(data.avatar_url || user.user_metadata?.avatar_url || "");
+          setUserRole(data.role || "Student");
         } else {
           setUserName(user.user_metadata?.full_name || "Student");
           setAvatarUrl(user.user_metadata?.avatar_url || "");
@@ -130,6 +132,12 @@ export default function DashboardLayout({
     return pathname.startsWith(item.href);
   };
 
+  const dynamicNavItems = [
+    ...navItems.slice(0, 5),
+    { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
+    ...navItems.slice(5)
+  ];
+
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
       {/* Sidebar */}
@@ -150,12 +158,12 @@ export default function DashboardLayout({
             <div className="font-['Plus_Jakarta_Sans'] text-sm font-bold text-[var(--c-text)]">
               {userName}
             </div>
-            <div className="text-xs text-[var(--c-muted)]">Student</div>
+            <div className="text-xs text-[var(--c-muted)] capitalize">{userRole}</div>
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
-          {navItems.map((item) => (
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
+          {dynamicNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -167,6 +175,16 @@ export default function DashboardLayout({
               {item.label}
             </Link>
           ))}
+          
+          {userRole === "admin" && (
+            <Link
+              href="/admin"
+              className={`sidebar-link ${pathname.startsWith("/admin") ? "active" : ""}`}
+            >
+              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+              Admin Panel
+            </Link>
+          )}
         </nav>
 
         <div className="mt-auto pt-5 border-t border-[var(--c-border)] flex flex-col gap-1">
