@@ -52,7 +52,7 @@ export default function MentorsPage() {
             Connect with industry experts for 1-on-1 guidance and interview preparation.
           </p>
         </div>
-        <Link href="/dashboard/mentor-register" className="btn-secondary text-sm">
+        <Link href="/mentordashboard" className="btn-secondary text-sm">
           Become a Mentor
         </Link>
       </div>

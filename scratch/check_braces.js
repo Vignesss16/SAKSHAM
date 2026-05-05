@@ -1,36 +1,37 @@
+const fs = require('fs');
+const path = require('path');
+const filePath = 'c:/Users/dell/sagethon/PrepWise-AI/app/dashboard/reports/page.tsx';
+const content = fs.readFileSync(filePath, 'utf8');
 
-import fs from 'fs';
+let stack = [];
+let lines = content.split('\n');
 
-const content = fs.readFileSync('c:/Users/dell/sagethon/PrepWise-AI/app/dashboard/daily/page.tsx', 'utf8');
-
-let braceStack = [];
-let parenStack = [];
-let bracketStack = [];
-
-const lines = content.split('\n');
-
-for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-  const line = lines[lineNum];
-  for (let col = 0; col < line.length; col++) {
-    const char = line[col];
-    if (char === '{') braceStack.push({ line: lineNum + 1, col: col + 1 });
-    if (char === '}') {
-      if (braceStack.length === 0) console.log(`Extra } at ${lineNum + 1}:${col + 1}`);
-      else braceStack.pop();
+for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    for (let j = 0; j < line.length; j++) {
+        let char = line[j];
+        if (char === '{') stack.push({ char, line: i + 1 });
+        else if (char === '}') {
+            if (stack.length === 0 || stack[stack.length - 1].char !== '{') {
+                console.log(`Unmatched } at line ${i + 1}`);
+            } else {
+                stack.pop();
+            }
+        }
+        else if (char === '(') stack.push({ char, line: i + 1 });
+        else if (char === ')') {
+            if (stack.length === 0 || stack[stack.length - 1].char !== '(') {
+                console.log(`Unmatched ) at line ${i + 1}`);
+            } else {
+                stack.pop();
+            }
+        }
     }
-    if (char === '(') parenStack.push({ line: lineNum + 1, col: col + 1 });
-    if (char === ')') {
-      if (parenStack.length === 0) console.log(`Extra ) at ${lineNum + 1}:${col + 1}`);
-      else parenStack.pop();
-    }
-    if (char === '[') bracketStack.push({ line: lineNum + 1, col: col + 1 });
-    if (char === ']') {
-      if (bracketStack.length === 0) console.log(`Extra ] at ${lineNum + 1}:${col + 1}`);
-      else bracketStack.pop();
-    }
-  }
 }
 
-console.log('Unclosed Braces:', braceStack);
-console.log('Unclosed Parens:', parenStack);
-console.log('Unclosed Brackets:', bracketStack);
+if (stack.length > 0) {
+    console.log('Unclosed items:');
+    stack.forEach(item => console.log(`${item.char} at line ${item.line}`));
+} else {
+    console.log('Braces and parentheses are balanced!');
+}
