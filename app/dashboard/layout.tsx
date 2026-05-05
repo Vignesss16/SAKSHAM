@@ -140,7 +140,7 @@ export default function DashboardLayout({
   ];
 
   const mentorNavItems = [
-    { href: "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
+    { href: isRegistering ? "/dashboard/mentor-register" : "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
     { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
     { href: "/dashboard/settings", icon: "settings", label: "Profile & Settings" },
     { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },

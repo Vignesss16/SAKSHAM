@@ -60,6 +60,30 @@ export default async function DashboardPage() {
     const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const userRole = roleData?.role || "student";
 
+    // If not a mentor yet, check if they have a mentor application
+    if (userRole !== "mentor") {
+      const { data: app } = await supabase
+        .from("mentor_applications")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (app) {
+        // Redirect to registration page to see status/form
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 glass">
+            <h2 className="text-2xl font-black mb-4">Mentor Application Active</h2>
+            <p className="text-muted mb-8">You are currently in the mentor onboarding process.</p>
+            <Link href="/dashboard/mentor-register" className="btn-primary py-3 px-10">
+              Go to Application Page
+            </Link>
+          </div>
+        );
+      }
+    }
+
     if (userRole === "mentor") {
       // Mentor Dashboard logic
       const { data: mentorData } = await supabase.from("mentors").select("*").eq("user_id", user.id).single();
