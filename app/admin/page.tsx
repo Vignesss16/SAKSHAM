@@ -27,20 +27,20 @@ export default function AdminDashboard() {
 
   const fetchApplications = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("mentor_applications")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (data) {
+    try {
+      const res = await fetch('/api/admin/applications');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
       setApplications(data as Application[]);
+    } catch (err) {
+      console.error('Failed to load applications', err);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchApplications();
-  }, [supabase]);
+  }, []);
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
     if (!confirm(`Are you sure you want to ${action} this application?`)) return;
