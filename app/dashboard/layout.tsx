@@ -155,19 +155,11 @@ export default function DashboardLayout({
       const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
       const userRole = roleData?.role || "student";
 
-      const { data: app } = await supabase
-        .from("mentor_applications")
-        .select("status")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      const isMentor = userRole === "mentor" || !!app;
-      setIsMentorFlow(isMentor);
+      const isApprovedMentor = userRole === "mentor";
+      setIsMentorFlow(isApprovedMentor);
 
-      // If they are in the mentor flow but at /dashboard, send them to the right place
-      if (isMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
+      // Only redirect approved mentors to the mentor dashboard
+      if (isApprovedMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
         router.replace('/mentordashboard');
       }
     }
