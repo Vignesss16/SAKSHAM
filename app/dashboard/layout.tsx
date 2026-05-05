@@ -140,7 +140,7 @@ export default function DashboardLayout({
   ];
 
   const mentorNavItems = [
-    { href: isRegistering ? "/dashboard/mentor-register" : "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
+    { href: "/mentordashboard", icon: "dashboard", label: "Dashboard", exact: true },
     { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
     { href: "/dashboard/settings", icon: "settings", label: "Profile & Settings" },
     { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },
@@ -164,10 +164,16 @@ export default function DashboardLayout({
         .limit(1)
         .maybeSingle();
       
-      setIsMentorFlow(userRole === "mentor" || !!app);
+      const isMentor = userRole === "mentor" || !!app;
+      setIsMentorFlow(isMentor);
+
+      // If they are in the mentor flow but at /dashboard, send them to the right place
+      if (isMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/mentors') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
+        router.replace('/mentordashboard');
+      }
     }
     checkMentorFlow();
-  }, [supabase]);
+  }, [supabase, pathname, router]);
 
   const dynamicNavItems = isMentorFlow ? mentorNavItems : studentNavItems;
   const dynamicAllPages = isMentorFlow

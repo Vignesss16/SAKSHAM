@@ -35,13 +35,34 @@ export default async function MentorDashboardPage() {
     .limit(1)
     .maybeSingle();
 
-  const isMentorFlow = userRole === "mentor" || !!app;
+  const isApproved = userRole === "mentor";
+  const hasApp = !!app;
 
-  if (!isMentorFlow) {
-    redirect("/dashboard");
+  // If no application yet, show application CTA instead of dashboard
+  if (!hasApp && !isApproved) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8">
+        <div className="glass p-12 max-w-2xl ai-border shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--c-primary)]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+          
+          <div className="w-20 h-20 bg-[var(--c-primary)]/10 rounded-full flex items-center justify-center mx-auto mb-8">
+            <span className="material-symbols-outlined text-5xl text-[var(--c-primary)]">assignment_ind</span>
+          </div>
+          
+          <h1 className="text-4xl font-black mb-4 tracking-tight">Become a SAKSHAM Expert</h1>
+          <p className="text-lg text-muted mb-10 leading-relaxed">
+            You are now in the Expert Portal. To start conducting mock interviews and earning, please complete your professional profile.
+          </p>
+          
+          <Link href="/dashboard/mentor-register" className="btn-primary py-5 px-12 text-lg shadow-xl shadow-[var(--c-primary)]/20">
+            Start Your Application
+            <span className="material-symbols-outlined ml-2">arrow_forward</span>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  const isApproved = userRole === "mentor";
   const { data: mentorData } = await supabase.from("mentors").select("*").eq("user_id", user.id).maybeSingle();
   const { count: sessionCount } = await supabase.from("mentor_bookings").select("*", { count: "exact", head: true }).eq("mentor_id", user.id);
 
