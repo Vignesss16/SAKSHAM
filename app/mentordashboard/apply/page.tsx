@@ -17,6 +17,7 @@ export default function MentorRegisterPage() {
     experienceYears: "",
     linkedinUrl: "",
     bio: "",
+    hourlyRate: "500",
   });
 
   const supabase = createBrowserClient(
@@ -77,6 +78,7 @@ export default function MentorRegisterPage() {
         experience_years: parseInt(formData.experienceYears, 10),
         linkedin_url: formData.linkedinUrl,
         bio: formData.bio,
+        hourly_rate: parseInt(formData.hourlyRate, 10) || 500,
         status: "pending",
       });
 
@@ -201,6 +203,21 @@ export default function MentorRegisterPage() {
               value={formData.linkedinUrl}
               onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
             />
+          </div>
+
+          <div>
+            <label className="text-xs text-[var(--c-muted)] font-semibold uppercase tracking-wider block mb-2">Desired Hourly Rate (₹)</label>
+            <input
+              required
+              type="number"
+              min="100"
+              step="50"
+              className="field"
+              placeholder="e.g. 500"
+              value={formData.hourlyRate}
+              onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
+            />
+            <p className="text-[10px] text-[var(--c-muted)] mt-1">Suggested: ₹300 - ₹1500 per hour</p>
           </div>
 
           <div>

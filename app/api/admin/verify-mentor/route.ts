@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           experience_years: app.experience_years,
           linkedin_url: app.linkedin_url,
           bio: app.bio,
-          hourly_rate: 50 // Default rate, they can change later
+          hourly_rate: app.hourly_rate || 500 // Use rate from application or default to 500
         });
       
       // If they are already a mentor it might error (unique constraint on user_id), but that's okay
