@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 function LoginContent() {
   const searchParams = useSearchParams()
   const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin'
+  const isMentor = searchParams.get('role') === 'mentor'
 
   const [tab, setTab] = useState<'signin' | 'signup'>(defaultTab)
   const [showPassword, setShowPassword] = useState(false)
@@ -113,6 +114,7 @@ function LoginContent() {
           </div>
           <span className="font-black text-xl" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'var(--c-text)' }}>
             SAKSHAM<span style={{ color: 'var(--c-primary)' }}>.AI</span>
+            {isMentor && <span className="text-xs font-normal ml-2 text-white/50 uppercase tracking-widest">Mentor Portal</span>}
           </span>
         </div>
 
@@ -121,18 +123,20 @@ function LoginContent() {
           <div>
             <h2 className="text-4xl font-black leading-tight mb-4"
               style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'var(--c-text)' }}>
-              Your dream job
+              {isMentor ? "Help talent grow" : "Your dream job"}
               <br />
               <span style={{
                 background: 'linear-gradient(135deg, #00d1ff 0%, #44e2cd 50%, #ecd3ff 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
-                starts with one session.
+                {isMentor ? "with SAKSHAM.AI Expert." : "starts with one session."}
               </span>
             </h2>
             <p className="text-[var(--c-muted)] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Join 50,000+ candidates who mastered their interviews with AI coaching.
+              {isMentor 
+                ? "Manage your consultations, track your earnings, and provide expert guidance to aspiring candidates."
+                : "Join 50,000+ candidates who mastered their interviews with AI coaching."}
             </p>
           </div>
 
@@ -141,31 +145,26 @@ function LoginContent() {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-full bg-[var(--c-primary)] flex items-center justify-center text-sm font-bold text-[#001f28]"
                 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                RK
+                {isMentor ? "SJ" : "RK"}
               </div>
               <div>
-                <div className="text-sm font-bold text-[var(--c-text)]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Rahul Kumar</div>
-                <div className="text-xs text-[var(--c-primary)]" style={{ fontFamily: 'Inter, sans-serif' }}>SDE @ Amazon</div>
+                <div className="text-sm font-bold text-[var(--c-text)]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{isMentor ? "Sarah Jenkins" : "Rahul Kumar"}</div>
+                <div className="text-xs text-[var(--c-primary)]" style={{ fontFamily: 'Inter, sans-serif' }}>{isMentor ? "Senior Recruiter @ Google" : "SDE @ Amazon"}</div>
               </div>
             </div>
             <p className="text-sm text-[var(--c-muted)] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-              &ldquo;Used SAKSHAM.AI for 2 weeks before my Amazon loop. Got L5 offer. The AI feedback was better than any human mock I did.&rdquo;
+              {isMentor 
+                ? "&ldquo;SAKSHAM.AI makes it incredibly easy to manage my mentorship hours and connect with high-quality candidates.&rdquo;"
+                : "&ldquo;Used SAKSHAM.AI for 2 weeks before my Amazon loop. Got L5 offer. The AI feedback was better than any human mock I did.&rdquo;"}
             </p>
-            <div className="flex gap-0.5 mt-3">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-3.5 h-3.5" fill="var(--c-primary)" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              ))}
-            </div>
           </div>
 
           {/* Stat pills */}
           <div className="flex flex-wrap gap-2.5">
             {[
-              { label: '50K+ Users', color: 'var(--c-primary)' },
-              { label: '94% Success Rate', color: 'var(--c-secondary)' },
-              { label: '200+ Companies', color: 'var(--c-tertiary)' },
+              { label: isMentor ? 'Expert Dashboard' : '50K+ Users', color: 'var(--c-primary)' },
+              { label: isMentor ? 'Live Consultations' : '94% Success Rate', color: 'var(--c-secondary)' },
+              { label: isMentor ? 'Earnings Reports' : '200+ Companies', color: 'var(--c-tertiary)' },
             ].map(s => (
               <div key={s.label} className="px-3 py-1.5 rounded-full text-xs font-semibold border"
                 style={{ borderColor: `${s.color}40`, background: `${s.color}10`, color: s.color, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -185,10 +184,10 @@ function LoginContent() {
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 relative min-h-screen">
         {/* Back link */}
         <div className="absolute top-6 left-6">
-          <Link href="/"
+          <Link href={isMentor ? "/mentor" : "/"}
             className="inline-flex items-center gap-1.5 text-sm text-[var(--c-muted)] hover:text-[var(--c-text)] transition-colors"
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            <ArrowLeft className="w-4 h-4" /> Back to home
+            <ArrowLeft className="w-4 h-4" /> Back to {isMentor ? 'mentor landing' : 'home'}
           </Link>
         </div>
 
@@ -208,10 +207,12 @@ function LoginContent() {
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-black text-[var(--c-text)] mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              {tab === 'signin' ? 'Welcome back' : 'Create account'}
+              {isMentor ? 'Mentor Portal' : (tab === 'signin' ? 'Welcome back' : 'Create account')}
             </h1>
             <p className="text-sm text-[var(--c-muted)]" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {tab === 'signin' ? 'Sign in to continue your interview prep' : 'Start mastering interviews for free'}
+              {isMentor 
+                ? 'Sign in to access your Mentor Dashboard' 
+                : (tab === 'signin' ? 'Sign in to continue your interview prep' : 'Start mastering interviews for free')}
             </p>
           </div>
 

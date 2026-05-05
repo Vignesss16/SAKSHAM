@@ -10,7 +10,7 @@ export default function MentorLandingPage() {
           SAKSHAM.AI <span className="text-white font-normal text-sm ml-1">For Mentors</span>
         </Link>
         <div className="flex gap-6 items-center">
-          <Link href="/login" className="text-sm font-bold hover:text-[var(--c-primary)] transition-colors no-underline">
+          <Link href="/login?role=mentor" className="text-sm font-bold hover:text-[var(--c-primary)] transition-colors no-underline">
             Mentor Login
           </Link>
           <Link href="/dashboard/mentor-register" className="btn-primary py-2 px-6 text-sm">
@@ -32,7 +32,7 @@ export default function MentorLandingPage() {
           <Link href="/dashboard/mentor-register" className="btn-primary py-5 px-12 text-lg shadow-xl shadow-[var(--c-primary)]/20">
             Join the Expert Network
           </Link>
-          <Link href="/login" className="btn-ghost py-5 px-12 text-lg border border-white/10">
+          <Link href="/login?role=mentor" className="btn-ghost py-5 px-12 text-lg border border-white/10">
             Access Dashboard
           </Link>
         </div>
