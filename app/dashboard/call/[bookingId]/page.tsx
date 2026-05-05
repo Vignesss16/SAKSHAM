@@ -95,6 +95,15 @@ export default function CallPage() {
 
 function CallRoom({ appId, channelName, token, uid }: { appId: string, channelName: string, token: string, uid: string }) {
   const router = useRouter();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [showChat, setShowChat] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   
   const { localMicrophoneTrack } = useLocalMicrophoneTrack();
   const { localCameraTrack } = useLocalCameraTrack();
@@ -105,6 +114,54 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
+
+  useEffect(() => {
+    async function setupChat() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUser(user.id);
+
+      // Fetch existing messages
+      const { data } = await supabase
+        .from("session_messages")
+        .select("*")
+        .eq("booking_id", channelName)
+        .order("created_at", { ascending: true });
+      
+      if (data) setMessages(data);
+
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`session:${channelName}`)
+        .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'session_messages',
+          filter: `booking_id=eq.${channelName}`
+        }, (payload) => {
+          setMessages(prev => [...prev, payload.new]);
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+    setupChat();
+  }, [channelName, supabase]);
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    const { error } = await supabase.from("session_messages").insert({
+      booking_id: channelName,
+      user_id: currentUser,
+      content: newMessage.trim()
+    });
+
+    if (error) console.error(error);
+    setNewMessage("");
+  };
 
   const toggleMic = () => {
     if (localMicrophoneTrack) {
@@ -121,78 +178,128 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   };
 
   const endCall = async () => {
-    // In a real app we would update the booking status to "completed" here
-    // using a server action or API route.
     router.push(`/dashboard/review/${channelName}`);
   };
 
   return (
-    <div className="flex flex-col h-[80vh] bg-[#121212] rounded-2xl overflow-hidden border border-[var(--c-border)] shadow-2xl">
-      <div className="bg-[#1a1a1a] p-4 flex items-center justify-between border-b border-[var(--c-border)]">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#64dc64] animate-pulse"></div>
-          <span className="font-['Plus_Jakarta_Sans'] font-bold text-white">Live Session</span>
+    <div className="flex flex-col h-[85vh] bg-[#0a0a0a] rounded-2xl overflow-hidden border border-[var(--c-border)] shadow-2xl relative">
+      {/* Header */}
+      <div className="bg-[#121212] p-4 flex items-center justify-between border-b border-[var(--c-border)] z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#64dc64] animate-pulse"></div>
+          <h2 className="font-['Plus_Jakarta_Sans'] font-bold text-white m-0">Live Mentorship</h2>
         </div>
-        <div className="text-sm text-[var(--c-muted)]">
-          {remoteUsers.length} Participant(s) joined
+        <div className="flex items-center gap-4">
+          <div className="text-xs text-[var(--c-muted)] font-medium">
+            {remoteUsers.length + 1} People in Room
+          </div>
+          <button 
+            onClick={() => setShowChat(!showChat)}
+            className={`p-2 rounded-lg transition-colors ${showChat ? 'bg-[var(--c-primary)] text-black' : 'bg-[#1a1a1a] text-white hover:bg-[#252525]'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">chat</span>
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Local Video */}
-        <div className="relative rounded-xl overflow-hidden bg-black flex items-center justify-center">
-          {localCameraTrack && cameraOn ? (
-            <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
-          ) : (
-            <div className="text-[var(--c-muted)] flex flex-col items-center">
-              <span className="material-symbols-outlined text-4xl mb-2">videocam_off</span>
-              Camera Off
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Video Area */}
+        <div className="flex-1 relative bg-black overflow-hidden">
+          {/* Remote Video (Main) */}
+          {remoteUsers.map((user) => (
+            <div key={user.uid} className="absolute inset-0 w-full h-full">
+              <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-cover" />
+              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest">
+                Partner
+              </div>
+            </div>
+          ))}
+          
+          {remoteUsers.length === 0 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-[var(--c-primary)]/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-4xl text-[var(--c-primary)] animate-pulse">videocam</span>
+              </div>
+              <span className="text-[var(--c-muted)] font-medium tracking-tight">Waiting for participant...</span>
             </div>
           )}
-          <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-sm font-bold flex items-center gap-2">
-            You {!micOn && <span className="material-symbols-outlined text-[16px] text-[#ffb4ab]">mic_off</span>}
+
+          {/* Local Video (PIP) */}
+          <div className={`absolute bottom-6 ${showChat ? 'right-6' : 'right-6'} w-40 md:w-56 aspect-video rounded-xl overflow-hidden border-2 border-[var(--c-primary)] shadow-2xl z-20 transition-all duration-500 ease-out ${!cameraOn ? 'bg-[#1a1a1a]' : 'bg-black'}`}>
+            {localCameraTrack && cameraOn ? (
+              <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-[var(--c-muted)] bg-[#1a1a1a]">
+                <span className="material-symbols-outlined text-2xl mb-1 opacity-20">person</span>
+                <span className="text-[8px] uppercase font-black tracking-widest opacity-40">Privacy Mode</span>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white text-[10px] font-bold flex items-center gap-1.5">
+              You {!micOn && <span className="material-symbols-outlined text-[12px] text-[#ffb4ab]">mic_off</span>}
+            </div>
           </div>
         </div>
 
-        {/* Remote Video */}
-        {remoteUsers.map((user) => (
-          <div key={user.uid} className="relative rounded-xl overflow-hidden bg-black flex items-center justify-center">
-            <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-cover" />
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-sm font-bold">
-              Participant
+        {/* Chat Sidebar */}
+        <div className={`transition-all duration-300 ease-in-out border-l border-[var(--c-border)] bg-[#121212] flex flex-col ${showChat ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          <div className="p-4 border-b border-[var(--c-border)]">
+            <span className="font-bold text-sm text-white">In-Call Messages</span>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.user_id === currentUser ? 'items-end' : 'items-start'}`}>
+                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.user_id === currentUser ? 'bg-[var(--c-primary)] text-black rounded-tr-none' : 'bg-[#1a1a1a] text-[var(--c-text)] rounded-tl-none border border-[var(--c-border)]'}`}>
+                  {msg.content}
+                </div>
+                <span className="text-[10px] text-[var(--c-muted)] mt-1 px-1">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <form onSubmit={sendMessage} className="p-4 bg-[#1a1a1a]">
+            <div className="relative">
+              <input 
+                type="text"
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="w-full bg-[#0a0a0a] border border-[var(--c-border)] rounded-xl py-2.5 pl-4 pr-10 text-xs focus:border-[var(--c-primary)] outline-none"
+              />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--c-primary)] hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">send</span>
+              </button>
             </div>
-          </div>
-        ))}
-        
-        {remoteUsers.length === 0 && (
-          <div className="relative rounded-xl overflow-hidden bg-[#1a1a1a] flex flex-col items-center justify-center border border-[var(--c-border)] border-dashed">
-            <span className="material-symbols-outlined text-4xl text-[var(--c-muted)] mb-3 animate-pulse">hourglass_empty</span>
-            <span className="text-[var(--c-muted)] font-medium">Waiting for other participant to join...</span>
-          </div>
-        )}
+          </form>
+        </div>
       </div>
 
-      <div className="bg-[#1a1a1a] p-4 flex justify-center items-center gap-4 border-t border-[var(--c-border)]">
+      {/* Controls */}
+      <div className="bg-[#121212] p-6 flex justify-center items-center gap-6 border-t border-[var(--c-border)] z-30">
         <button 
           onClick={toggleMic}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${micOn ? 'bg-[var(--c-bg3)] hover:bg-[var(--c-muted)] text-white' : 'bg-[#ffb4ab] text-[#001f28]'}`}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${micOn ? 'bg-[#1a1a1a] hover:bg-[#252525] text-white' : 'bg-[#ffb4ab] text-[#001f28] shadow-lg shadow-[#ffb4ab]/20 scale-110'}`}
         >
-          <span className="material-symbols-outlined text-2xl">{micOn ? 'mic' : 'mic_off'}</span>
+          <span className="material-symbols-outlined text-[22px]">{micOn ? 'mic' : 'mic_off'}</span>
         </button>
         
         <button 
           onClick={toggleCamera}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${cameraOn ? 'bg-[var(--c-bg3)] hover:bg-[var(--c-muted)] text-white' : 'bg-[#ffb4ab] text-[#001f28]'}`}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${cameraOn ? 'bg-[#1a1a1a] hover:bg-[#252525] text-white' : 'bg-[#ffb4ab] text-[#001f28] shadow-lg shadow-[#ffb4ab]/20 scale-110'}`}
         >
-          <span className="material-symbols-outlined text-2xl">{cameraOn ? 'videocam' : 'videocam_off'}</span>
+          <span className="material-symbols-outlined text-[22px]">{cameraOn ? 'videocam' : 'videocam_off'}</span>
         </button>
+
+        <div className="w-[1px] h-8 bg-[var(--c-border)] mx-2"></div>
 
         <button 
           onClick={endCall}
-          className="w-14 h-14 rounded-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-colors"
-          title="End Call"
+          className="px-8 h-12 rounded-2xl flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold transition-all shadow-lg shadow-red-500/20 gap-2"
         >
-          <span className="material-symbols-outlined text-2xl">call_end</span>
+          <span className="material-symbols-outlined text-[20px]">call_end</span>
+          <span className="text-sm">End Session</span>
         </button>
       </div>
     </div>

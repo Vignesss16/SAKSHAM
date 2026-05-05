@@ -60,6 +60,30 @@ export default function MentorSessionsPage() {
     }
   };
 
+  const handleStatusUpdate = async (sessionId: string, newStatus: string, studentId: string) => {
+    const { error } = await supabase
+      .from("mentor_bookings")
+      .update({ status: newStatus })
+      .eq("id", sessionId);
+
+    if (error) {
+      alert("Error updating status: " + error.message);
+    } else {
+      // Notify student if confirmed
+      if (newStatus === 'confirmed') {
+        await supabase.from("notifications").insert({
+          user_id: studentId,
+          title: "Booking Confirmed! ✅",
+          content: "Your mentorship session has been accepted. You can now join the call at the scheduled time.",
+          type: "booking_confirmed",
+          link: `/dashboard/mentors/sessions`
+        });
+      }
+
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: newStatus } : s));
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
@@ -89,7 +113,8 @@ export default function MentorSessionsPage() {
           {sessions.map((session) => {
             const isMentor = session.mentor_id === userId;
             const otherParty = isMentor ? session.student?.full_name : session.mentor?.profiles?.full_name;
-            const canJoin = session.status === "pending" || session.status === "confirmed";
+            const canJoin = session.status === "confirmed";
+            const isPending = session.status === "pending";
 
             return (
               <div key={session.id} className="glass p-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -117,6 +142,24 @@ export default function MentorSessionsPage() {
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(session.status)}`}>
                     {session.status}
                   </span>
+
+                  {isPending && isMentor && (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleStatusUpdate(session.id, 'confirmed', session.student_id)}
+                        className="btn-primary py-2 px-4 text-xs"
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(session.id, 'cancelled', session.student_id)}
+                        className="btn-secondary py-2 px-4 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  )}
+
                   {canJoin && (
                     <Link href={`/dashboard/call/${session.id}`} className="btn-primary py-2 px-6 text-sm">
                       Join Call

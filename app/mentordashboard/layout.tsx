@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import NotificationBell from "@/components/NotificationBell";
 
 const mentorNavItems = [
   { href: "/mentordashboard", icon: "dashboard", label: "Dashboard", exact: true },
@@ -156,6 +157,7 @@ export default function MentorDashboardLayout({
         <header className="top-header sticky top-0">
           <div className="flex-1"></div>
           <div className="flex items-center gap-2 relative">
+            <NotificationBell />
             <button
               onClick={handleThemeToggle}
               className="bg-transparent border-none cursor-pointer w-9 h-9 rounded-lg flex items-center justify-center text-[var(--c-muted)] hover:bg-[var(--c-bg3)] transition-transform active:scale-95"

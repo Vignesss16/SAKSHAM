@@ -9,8 +9,8 @@ type Booking = {
   scheduled_at: string;
   status: string;
   meeting_link: string;
-  mentor: { full_name: string; company: string; job_role: string };
-  student: { full_name: string };
+  mentor: { profiles: { full_name: string } } | null;
+  student: { full_name: string } | null;
   mentor_id: string;
   student_id: string;
 };
@@ -35,15 +35,16 @@ export default function SessionsPage() {
         .from("mentor_bookings")
         .select(`
           id, scheduled_at, status, meeting_link, mentor_id, student_id,
-          mentor:mentor_id(full_name, company, job_role),
+          mentor:mentor_id(profiles(full_name)),
           student:student_id(full_name)
         `)
         .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
         .order("scheduled_at", { ascending: true });
 
-      if (data) {
-        setSessions(data as any);
+      if (error) {
+        console.error("Error fetching sessions:", error);
       }
+      if (data) setSessions(data as any);
       setLoading(false);
     }
     fetchSessions();
@@ -86,9 +87,10 @@ export default function SessionsPage() {
         <div className="space-y-4">
           {sessions.map((session) => {
             const isMentor = session.mentor_id === userId;
-            const otherParty = isMentor ? session.student.full_name : session.mentor.full_name;
-            const canJoin = session.status === "pending" || session.status === "confirmed";
-            
+            const otherParty = isMentor ? session.student?.full_name : session.mentor?.profiles?.full_name;
+            const canJoin = session.status === "confirmed"; // Only join if confirmed
+            const isPending = session.status === "pending";
+
             return (
               <div key={session.id} className="glass p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-5 w-full md:w-auto">
@@ -99,7 +101,7 @@ export default function SessionsPage() {
                   </div>
                   <div>
                     <div className="font-bold text-[var(--c-text)] text-lg">
-                      Session with {otherParty}
+                      Session with {otherParty || "Unknown"}
                     </div>
                     <div className="text-sm text-[var(--c-muted)] flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">calendar_today</span>
@@ -116,13 +118,18 @@ export default function SessionsPage() {
                     {session.status}
                   </span>
                   
+                  {isPending && !isMentor && (
+                    <span className="text-xs text-amber-400 font-medium italic">Waiting for mentor...</span>
+                  )}
+
                   {canJoin ? (
                     <Link 
                       href={`/dashboard/call/${session.id}`}
-                      className="btn-primary py-2 px-6 text-sm"
+                      className="btn-primary py-2 px-6 text-sm flex items-center gap-2"
+                      onClick={() => alert("Simulating Payment Gateway... Success! Redirecting to call.")}
                     >
-                      Join Call
-                      <span className="material-symbols-outlined text-[18px]">videocam</span>
+                      Pay & Join
+                      <span className="material-symbols-outlined text-[18px]">payments</span>
                     </Link>
                   ) : session.status === "completed" ? (
                     <Link 

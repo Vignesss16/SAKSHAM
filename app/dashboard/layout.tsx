@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AIChatbot } from "@/components/AIChatbot";
+import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { href: "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
@@ -294,6 +295,7 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center gap-2 relative">
+            <NotificationBell />
             <button
               onClick={handleThemeToggle}
               className="bg-transparent border-none cursor-pointer w-9 h-9 rounded-lg flex items-center justify-center text-[var(--c-muted)] hover:bg-[var(--c-bg3)] transition-transform active:scale-95"
