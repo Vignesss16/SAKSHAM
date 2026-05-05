@@ -98,7 +98,8 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showChat, setShowChat] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'alert' } | null>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -116,37 +117,100 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   const [cameraOn, setCameraOn] = useState(true);
 
   useEffect(() => {
-    async function setupChat() {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    async function setupChatAndPresence() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUser(user.id);
+      if (!user) return;
+      setCurrentUser(user.id);
+
+      // Fetch user profile for presence
+      const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
 
       // Fetch existing messages
-      const { data } = await supabase
+      const { data: msgs } = await supabase
         .from("session_messages")
         .select("*")
         .eq("booking_id", channelName)
         .order("created_at", { ascending: true });
       
-      if (data) setMessages(data);
+      if (msgs) setMessages(msgs);
 
-      // Subscribe to new messages
-      const channel = supabase
-        .channel(`session:${channelName}`)
+      // Channel for both Presence and Postgres Changes
+      const channel = supabase.channel(`call_room:${channelName}`, {
+        config: {
+          presence: {
+            key: user.id,
+          },
+        },
+      });
+
+      channel
         .on('postgres_changes', { 
           event: 'INSERT', 
           schema: 'public', 
           table: 'session_messages',
           filter: `booking_id=eq.${channelName}`
         }, (payload) => {
-          setMessages(prev => [...prev, payload.new]);
+          console.log("In-call message received:", payload.new);
+          setMessages(prev => {
+            if (prev.find(m => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
         })
-        .subscribe();
+        .on('presence', { event: 'sync' }, () => {
+          const newState = channel.presenceState();
+          console.log("Presence sync:", newState);
+          const users = Object.values(newState).flat();
+          setParticipants(users);
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          const joinedUser = newPresences[0] as any;
+          if (key !== user.id) {
+            setToast({ 
+              message: `${joinedUser.full_name || 'Someone'} joined the room`, 
+              type: 'success' 
+            });
+            
+            // Special alert for student if mentor joins
+            if (profile?.role === 'student' && joinedUser.role === 'mentor') {
+              setToast({ 
+                message: "🚀 Mentor has joined! Please enable your camera and mic.", 
+                type: 'alert' 
+              });
+            }
+          }
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          const leftUser = leftPresences[0] as any;
+          if (key !== user.id) {
+            setToast({ 
+              message: `${leftUser.full_name || 'Someone'} left the room`, 
+              type: 'info' 
+            });
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log("Realtime subscribed in call room");
+            await channel.track({
+              id: user.id,
+              full_name: profile?.full_name || user.email,
+              role: profile?.role || 'student'
+            });
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
       };
     }
-    setupChat();
+    setupChatAndPresence();
   }, [channelName, supabase]);
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -183,6 +247,22 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
   return (
     <div className="flex flex-col h-[85vh] bg-[#0a0a0a] rounded-2xl overflow-hidden border border-[var(--c-border)] shadow-2xl relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`absolute top-20 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top duration-300`}>
+          <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+            toast.type === 'alert' ? 'bg-amber-500/90 text-black border-amber-400' : 
+            toast.type === 'success' ? 'bg-[var(--c-primary)]/90 text-black border-[var(--c-primary)]' : 
+            'bg-[#1a1a1a]/90 text-white border-[var(--c-border)]'
+          }`}>
+            <span className="material-symbols-outlined text-[20px]">
+              {toast.type === 'alert' ? 'campaign' : toast.type === 'success' ? 'person_add' : 'info'}
+            </span>
+            <span className="text-sm font-bold tracking-tight">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-[#121212] p-4 flex items-center justify-between border-b border-[var(--c-border)] z-30">
         <div className="flex items-center gap-3">
@@ -190,8 +270,8 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           <h2 className="font-['Plus_Jakarta_Sans'] font-bold text-white m-0">Live Mentorship</h2>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-xs text-[var(--c-muted)] font-medium">
-            {remoteUsers.length + 1} People in Room
+          <div className="text-xs text-[var(--c-muted)] font-medium bg-[#1a1a1a] px-3 py-1 rounded-full border border-[var(--c-border)]">
+            {participants.length} {participants.length === 1 ? 'Person' : 'People'} in Room
           </div>
           <button 
             onClick={() => setShowChat(!showChat)}
@@ -209,7 +289,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           {remoteUsers.map((user) => (
             <div key={user.uid} className="absolute inset-0 w-full h-full">
               <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest">
+              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest border border-white/10">
                 Partner
               </div>
             </div>
