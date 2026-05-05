@@ -53,6 +53,7 @@ export default function MentorDashboardLayout({
   }, []);
 
   const [isApproved, setIsApproved] = useState(true);
+  const [hasApplication, setHasApplication] = useState(true);
   const [checkingApproval, setCheckingApproval] = useState(true);
 
   useEffect(() => {
@@ -65,6 +66,14 @@ export default function MentorDashboardLayout({
           setAvatarUrl(data.avatar_url || user.user_metadata?.avatar_url || "");
           setUserRole(data.role || "Mentor");
           setIsApproved(data.role === "mentor");
+
+          // Also check if they even have an application
+          const { data: app } = await supabase
+            .from("mentor_applications")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          setHasApplication(!!app);
         }
       } else {
         router.push("/login?role=mentor");
@@ -92,7 +101,7 @@ export default function MentorDashboardLayout({
     return pathname.startsWith(item.href);
   };
 
-  const showOverlay = !isApproved && pathname !== "/mentordashboard/settings" && pathname !== "/mentordashboard/apply";
+  const showOverlay = !isApproved && hasApplication && pathname !== "/mentordashboard/settings" && pathname !== "/mentordashboard/apply";
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
