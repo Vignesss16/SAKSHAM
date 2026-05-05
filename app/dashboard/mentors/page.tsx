@@ -30,7 +30,7 @@ export default function MentorsPage() {
         .from("mentors")
         .select(`
           user_id, company, job_role, experience_years, rating, total_reviews, hourly_rate,
-          profiles!inner(full_name, avatar_url)
+          profiles(full_name, avatar_url)
         `);
       
       if (data) {
@@ -43,18 +43,13 @@ export default function MentorsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-['Plus_Jakarta_Sans'] text-3xl font-black tracking-tight text-[var(--c-text)] m-0 mb-2">
-            Find a Mentor
-          </h1>
-          <p className="text-[var(--c-muted)] text-[15px] m-0">
-            Connect with industry experts for 1-on-1 guidance and interview preparation.
-          </p>
-        </div>
-        <Link href="/mentordashboard" className="btn-secondary text-sm">
-          Become a Mentor
-        </Link>
+      <div className="mb-8">
+        <h1 className="font-['Plus_Jakarta_Sans'] text-3xl font-black tracking-tight text-[var(--c-text)] m-0 mb-2">
+          Find a Mentor
+        </h1>
+        <p className="text-[var(--c-muted)] text-[15px] m-0">
+          Connect with industry experts for 1-on-1 guidance and interview preparation.
+        </p>
       </div>
 
       {loading ? (
