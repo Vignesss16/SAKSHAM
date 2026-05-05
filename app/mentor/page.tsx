@@ -19,7 +19,7 @@ export default function MentorLandingPage() {
           <div className="hidden md:flex gap-8 items-center">
             <a href="#benefits" className="text-sm font-semibold text-[var(--c-muted)] hover:text-white transition-colors no-underline">Benefits</a>
             <a href="#how-it-works" className="text-sm font-semibold text-[var(--c-muted)] hover:text-white transition-colors no-underline">Process</a>
-            <Link href="/login?role=mentor&redirect=/dashboard" className="text-sm font-bold text-[var(--c-primary)] hover:underline no-underline">
+            <Link href="/login?role=mentor" className="text-sm font-bold text-[var(--c-primary)] hover:underline no-underline">
               Mentor Login
             </Link>
             <Link href="/dashboard/mentor-register" className="btn-primary py-2 px-6 text-sm shadow-lg shadow-[var(--c-primary)]/10">
@@ -57,7 +57,7 @@ export default function MentorLandingPage() {
               Join the Expert Network
               <span className="material-symbols-outlined ml-2">rocket_launch</span>
             </Link>
-            <Link href="/login?role=mentor&redirect=/dashboard" className="group flex items-center gap-3 text-white font-bold text-lg no-underline hover:text-[var(--c-primary)] transition-colors">
+            <Link href="/login?role=mentor" className="group flex items-center gap-3 text-white font-bold text-lg no-underline hover:text-[var(--c-primary)] transition-colors">
               Access Dashboard
               <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--c-primary)] group-hover:text-[#001f28] transition-all">
                 <span className="material-symbols-outlined">arrow_forward</span>

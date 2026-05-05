@@ -24,6 +24,18 @@ function LoginContent() {
   // Sign-up form state
   const [signup, setSignup] = useState({ name: '', email: '', password: '' })
 
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // If already logged in, redirect based on role parameter
+        const redirectPath = searchParams.get('redirect') || (isMentor ? '/dashboard/mentor-register' : '/dashboard')
+        window.location.href = redirectPath
+      }
+    }
+    checkSession()
+  }, [supabase, isMentor, searchParams])
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
