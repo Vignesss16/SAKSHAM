@@ -125,7 +125,7 @@ export default function MentorLandingPage() {
             Apply Now
           </Link>
         </div>
-      </footer>
+      </section>
 
       <footer className="py-12 px-6 text-center border-t border-white/5">
         <div className="flex justify-center gap-8 mb-6">
