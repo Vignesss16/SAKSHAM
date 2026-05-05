@@ -113,9 +113,17 @@ export default function MentorRegisterPage() {
   if (applicationStatus === "pending") {
     return (
       <div className="max-w-2xl mx-auto p-8 text-center glass mt-10">
-        <span className="material-symbols-outlined text-6xl text-[var(--c-secondary)] mb-4">hourglass_top</span>
-        <h2 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-white mb-2">Application Under Review</h2>
-        <p className="text-[var(--c-muted)]">Our team is currently reviewing your mentor application. We will notify you once it is approved.</p>
+        <div className="w-20 h-20 bg-[var(--c-secondary)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="material-symbols-outlined text-5xl text-[var(--c-secondary)] animate-pulse">hourglass_top</span>
+        </div>
+        <h2 className="text-3xl font-black font-['Plus_Jakarta_Sans'] text-white mb-4">Application Under Review</h2>
+        <p className="text-lg text-[var(--c-muted)] leading-relaxed">
+          Our team is currently reviewing your profile for the Expert Program. <br/>
+          <span className="text-white font-bold">You will receive an email confirmation once selected, usually within a few hours.</span>
+        </p>
+        <div className="mt-8 p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-[var(--c-muted)]">
+          Thank you for joining India's most advanced AI-powered mentor network.
+        </div>
         <button onClick={() => router.push("/dashboard")} className="btn-primary mt-6">Return to Dashboard</button>
       </div>
     );
