@@ -68,13 +68,14 @@ export default function MentorDetailPage() {
 
       const rate = mentor?.hourly_rate || 0;
       const commission = Math.round(rate * 0.20); // 20% commission
+      const total = rate + commission;
 
       const { data, error } = await supabase.from("mentor_bookings").insert({
         student_id: user.id,
         mentor_id: mentor!.user_id,
         scheduled_at: new Date(scheduledAt).toISOString(),
         status: "pending",
-        payment_amount: rate,
+        payment_amount: total,
         commission_amount: commission
       }).select().single();
 
@@ -186,7 +187,7 @@ export default function MentorDetailPage() {
             </div>
             <div className="flex justify-between font-bold text-[var(--c-text)] pt-2 border-t border-[var(--c-border)]">
               <span>Total Price</span>
-              <span>₹{mentor.hourly_rate}</span>
+              <span>₹{mentor.hourly_rate + Math.round(mentor.hourly_rate * 0.20)}</span>
             </div>
           </div>
 

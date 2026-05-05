@@ -159,7 +159,7 @@ export default function DashboardLayout({
       setIsMentorFlow(isApprovedMentor);
 
       // Only redirect approved mentors to the mentor dashboard
-      if (isApprovedMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
+      if (isApprovedMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports') && !pathname.startsWith('/dashboard/call')) {
         router.replace('/mentordashboard');
       }
     }
