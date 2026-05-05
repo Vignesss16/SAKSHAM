@@ -153,6 +153,26 @@ export default function DashboardLayout({
   ];
 
   const dynamicNavItems = userRole === "mentor" ? mentorNavItems : studentNavItems;
+  const dynamicAllPages = userRole === "mentor" 
+    ? ALL_PAGES.filter(p => !['/dashboard/daily', '/dashboard/new', '/dashboard/resume', '/dashboard/leaderboard', '/dashboard/certificates'].includes(p.href))
+    : ALL_PAGES;
+
+  const searchResults = searchQuery.trim()
+    ? dynamicAllPages.filter(p =>
+        p.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.desc.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  // Security: Prevent mentors from accessing student-only pages
+  useEffect(() => {
+    if (userRole === "mentor") {
+      const studentOnlyPaths = ['/dashboard/daily', '/dashboard/new', '/dashboard/resume', '/dashboard/certificates', '/dashboard/leaderboard'];
+      if (studentOnlyPaths.some(path => pathname.startsWith(path))) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [userRole, pathname, router]);
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
@@ -204,7 +224,7 @@ export default function DashboardLayout({
         </nav>
 
         <div className="mt-auto pt-5 border-t border-[var(--c-border)] flex flex-col gap-1">
-          {userRole !== "mentor" && (
+          {userRole === "student" && (
             <Link
               href="/dashboard/new"
               className="btn-primary w-full justify-center text-[13px] p-3 mb-2"
@@ -288,7 +308,7 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      <AIChatbot />
+      {userRole !== "mentor" && <AIChatbot />}
     </div>
   );
 }
