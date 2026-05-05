@@ -23,7 +23,6 @@ const ALL_PAGES = [
   { label: "AI Interview", href: "/dashboard/new", desc: "Start a new mock interview session" },
   { label: "AI Resume Analyzer", href: "/dashboard/resume", desc: "Analyze and score your resume" },
   { label: "Find a Mentor", href: "/dashboard/mentors", desc: "Connect with industry experts for 1-on-1 guidance" },
-  { label: "Become a Mentor", href: "/dashboard/mentor-register", desc: "Apply to be a mentor and help students" },
   { label: "Certificates", href: "/dashboard/certificates", desc: "View earned certificates" },
   { label: "Reports", href: "/dashboard/reports", desc: "View interview performance reports" },
   { label: "Leaderboard", href: "/dashboard/leaderboard", desc: "See global rankings by credits" },

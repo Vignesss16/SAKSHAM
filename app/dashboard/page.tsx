@@ -238,21 +238,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Become a Mentor Advertisement */}
-      <div className="mt-12 glass p-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-[var(--c-primary)]/20 shadow-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--c-primary)]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-        <div className="relative z-10">
-          <div className="badge badge-teal mb-4 px-3 py-1 text-[11px] font-bold tracking-widest uppercase">Expert Network</div>
-          <h2 className="font-heading text-3xl font-black text-[var(--c-text)] mb-3">Share your knowledge. <br/><span className="text-[var(--c-primary)]">Become a Mentor.</span></h2>
-          <p className="text-muted text-[15px] max-w-[500px] leading-relaxed">Join our community of industry experts, help students crack their dream interviews, and earn up to $100/hr while you're at it.</p>
-        </div>
-        <div className="relative z-10 shrink-0">
-          <Link href="/mentordashboard" className="btn-primary py-4 px-10 text-[16px] shadow-lg shadow-[var(--c-primary)]/20 hover:-translate-y-1 transition-transform">
-            Apply as Mentor
-            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
