@@ -146,9 +146,31 @@ export default function DashboardLayout({
     { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },
   ];
 
-  const isRegistering = pathname === "/dashboard/mentor-register";
-  const dynamicNavItems = (userRole === "mentor" || isRegistering) ? mentorNavItems : studentNavItems;
-  const dynamicAllPages = (userRole === "mentor" || isRegistering) 
+  const [isMentorFlow, setIsMentorFlow] = useState(false);
+
+  useEffect(() => {
+    async function checkMentorFlow() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      const userRole = roleData?.role || "student";
+
+      const { data: app } = await supabase
+        .from("mentor_applications")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      setIsMentorFlow(userRole === "mentor" || !!app);
+    }
+    checkMentorFlow();
+  }, [supabase]);
+
+  const dynamicNavItems = isMentorFlow ? mentorNavItems : studentNavItems;
+  const dynamicAllPages = isMentorFlow
     ? ALL_PAGES.filter(p => !['/dashboard/daily', '/dashboard/new', '/dashboard/resume', '/dashboard/leaderboard', '/dashboard/certificates'].includes(p.href))
     : ALL_PAGES;
 
@@ -161,13 +183,13 @@ export default function DashboardLayout({
 
   // Security: Prevent mentors from accessing student-only pages
   useEffect(() => {
-    if (userRole === "mentor") {
+    if (isMentorFlow) {
       const studentOnlyPaths = ['/dashboard/daily', '/dashboard/new', '/dashboard/resume', '/dashboard/certificates', '/dashboard/leaderboard'];
       if (studentOnlyPaths.some(path => pathname.startsWith(path))) {
         router.replace('/dashboard');
       }
     }
-  }, [userRole, pathname, router]);
+  }, [isMentorFlow, pathname, router]);
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
@@ -303,7 +325,7 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {(userRole !== "mentor" && !isRegistering) && <AIChatbot />}
+      {!isMentorFlow && <AIChatbot />}
     </div>
   );
 }
