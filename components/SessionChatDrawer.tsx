@@ -27,6 +27,7 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
       
       if (data) setMessages(data);
 
+      console.log(`Subscribing to chat for booking: ${bookingId}`);
       const channel = supabase
         .channel(`drawer_chat:${bookingId}`)
         .on('postgres_changes', { 
@@ -35,11 +36,19 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
           table: 'session_messages',
           filter: `booking_id=eq.${bookingId}`
         }, (payload) => {
-          setMessages(prev => [...prev, payload.new]);
+          console.log("New message received via realtime:", payload.new);
+          setMessages(prev => {
+            // Prevent duplicates if already added by local state (though we don't do that here)
+            if (prev.find(m => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log(`Realtime status for booking ${bookingId}:`, status);
+        });
 
       return () => {
+        console.log(`Unsubscribing from chat for booking: ${bookingId}`);
         supabase.removeChannel(channel);
       };
     }

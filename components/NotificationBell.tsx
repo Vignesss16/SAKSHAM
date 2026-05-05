@@ -32,6 +32,7 @@ export default function NotificationBell() {
       }
 
       // Realtime subscription
+      console.log(`Subscribing to notifications for user: ${user.id}`);
       const channel = supabase
         .channel(`user_notifications:${user.id}`)
         .on('postgres_changes', { 
@@ -40,12 +41,16 @@ export default function NotificationBell() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         }, (payload) => {
+          console.log("New notification received via realtime:", payload.new);
           setNotifications(prev => [payload.new, ...prev]);
           setUnreadCount(prev => prev + 1);
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log(`Notification realtime status:`, status);
+        });
 
       return () => {
+        console.log(`Unsubscribing from notifications for user: ${user.id}`);
         supabase.removeChannel(channel);
       };
     }
