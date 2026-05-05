@@ -54,7 +54,7 @@ export default async function MentorDashboardPage() {
             You are now in the Expert Portal. To start conducting mock interviews and earning, please complete your professional profile.
           </p>
           
-          <Link href="/dashboard/mentor-register" className="btn-primary py-5 px-12 text-lg shadow-xl shadow-[var(--c-primary)]/20">
+          <Link href="/mentordashboard/apply" className="btn-primary py-5 px-12 text-lg shadow-xl shadow-[var(--c-primary)]/20">
             Start Your Application
             <span className="material-symbols-outlined ml-2">arrow_forward</span>
           </Link>
@@ -76,7 +76,7 @@ export default async function MentorDashboardPage() {
             </div>
             <h2 className="text-2xl font-black mb-3">Application Under Review</h2>
             <p className="text-muted mb-6 text-sm">We are currently verifying your professional background. You will get full access to these features within a few hours of approval.</p>
-            <Link href="/dashboard/mentor-register" className="btn-primary py-3 px-8 text-sm">
+            <Link href="/mentordashboard/apply" className="btn-primary py-3 px-8 text-sm">
               View Application Status
             </Link>
           </div>
@@ -110,7 +110,7 @@ export default async function MentorDashboardPage() {
           <h3 className="font-heading text-xl font-bold mb-2">Review Your Upcoming Sessions</h3>
           <p className="text-muted text-sm max-w-md">See who you're helping next and prepare for your consultations.</p>
         </div>
-        <Link href="/dashboard/mentors/sessions" className={`btn-primary py-3 px-8 ${!isApproved ? 'pointer-events-none' : ''}`}>
+        <Link href="/mentordashboard/sessions" className={`btn-primary py-3 px-8 ${!isApproved ? 'pointer-events-none' : ''}`}>
           View All Sessions
         </Link>
       </div>

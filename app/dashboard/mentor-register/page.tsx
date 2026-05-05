@@ -28,7 +28,7 @@ export default function MentorRegisterPage() {
     async function checkStatus() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/login?role=mentor&redirect=/dashboard/mentor-register");
+        router.push("/login?role=mentor&redirect=/mentordashboard");
         return;
       }
 
@@ -105,7 +105,7 @@ export default function MentorRegisterPage() {
         <span className="material-symbols-outlined text-6xl text-[var(--c-primary)] mb-4">verified</span>
         <h2 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-white mb-2">You are a Verified Mentor</h2>
         <p className="text-[var(--c-muted)]">Your profile is already active in the mentor directory.</p>
-        <button onClick={() => router.push("/dashboard")} className="btn-primary mt-6">Go to Dashboard</button>
+        <button onClick={() => router.push("/mentordashboard")} className="btn-primary mt-6">Go to Dashboard</button>
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function MentorRegisterPage() {
         <div className="mt-8 p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-[var(--c-muted)]">
           Thank you for joining India's most advanced AI-powered mentor network.
         </div>
-        <button onClick={() => router.push("/dashboard")} className="btn-primary mt-6">Return to Dashboard</button>
+        <button onClick={() => router.push("/mentordashboard")} className="btn-primary mt-6">Return to Dashboard</button>
       </div>
     );
   }

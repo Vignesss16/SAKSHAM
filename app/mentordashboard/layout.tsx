@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 
 const mentorNavItems = [
   { href: "/mentordashboard", icon: "dashboard", label: "Dashboard", exact: true },
-  { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
-  { href: "/dashboard/settings", icon: "settings", label: "Profile & Settings" },
-  { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },
+  { href: "/mentordashboard/sessions", icon: "event_repeat", label: "My Sessions" },
+  { href: "/mentordashboard/settings", icon: "settings", label: "Profile & Settings" },
+  { href: "/mentordashboard/earnings", icon: "payments", label: "Earnings & Reports" },
 ];
 
 function applyTheme(theme: string) {
