@@ -19,6 +19,10 @@ export default async function DashboardPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   let firstName = "Student";
   let interviewsCompleted = 0;
   let lastScore: number | string = "--";
@@ -26,16 +30,16 @@ export default async function DashboardPage() {
   let certificatesEarned = 0;
   let userCredits = 0;
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, credits")
-      .eq("id", user.id)
-      .maybeSingle();
 
-    const fullName = profile?.full_name || user.user_metadata?.full_name || "Student";
-    firstName = fullName.split(" ")[0];
-    userCredits = profile?.credits || 0;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, credits")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const fullName = profile?.full_name || user.user_metadata?.full_name || "Student";
+  firstName = fullName.split(" ")[0];
+  userCredits = profile?.credits || 0;
 
     const { data: interviewsData } = await supabase
       .from("interviews")
@@ -75,10 +79,43 @@ export default async function DashboardPage() {
     if (isMentorFlow) {
       redirect("/mentordashboard");
     }
-  }
 
-  return (
-    <div id="dash-home">
+    // Fetch next mentorship session
+    const { data: nextSession } = await supabase
+      .from("mentor_bookings")
+      .select("id, scheduled_at, status, mentor:mentor_id(profiles(full_name))")
+      .eq("student_id", user.id)
+      .eq("status", "confirmed")
+      .gte("scheduled_at", new Date().toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return (
+      <div id="dash-home">
+        {nextSession && (
+          <div className="mb-8 ai-border p-5 bg-gradient-to-r from-[var(--c-primary)]/10 to-[var(--c-secondary)]/10 border-[var(--c-primary)]/30 flex items-center justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--c-primary)]/20 flex items-center justify-center animate-pulse">
+                <span className="material-symbols-outlined text-[var(--c-primary)] text-3xl">videocam</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white mb-0.5">Upcoming Session with {(nextSession.mentor as any)?.profiles?.full_name}</h4>
+                <p className="text-xs text-[var(--c-muted)]">
+                  {new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(nextSession.scheduled_at))}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard/mentors/sessions" className="btn-secondary py-2 px-4 text-xs">
+                Manage All
+              </Link>
+              <Link href={`/dashboard/call/${nextSession.id}`} className="btn-primary py-2 px-6 text-xs shadow-lg shadow-[var(--c-primary)]/20">
+                Join Now
+              </Link>
+            </div>
+          </div>
+        )}
       <div className="flex justify-between items-end mb-7 flex-wrap gap-4">
         <div>
           <h1 className="font-heading text-[clamp(24px,3vw,32px)] font-black m-0 mb-1.5 tracking-tight text-[var(--c-text)]">

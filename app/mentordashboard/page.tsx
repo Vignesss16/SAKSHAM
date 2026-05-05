@@ -66,8 +66,42 @@ export default async function MentorDashboardPage() {
   const { data: mentorData } = await supabase.from("mentors").select("*").eq("user_id", user.id).maybeSingle();
   const { count: sessionCount } = await supabase.from("mentor_bookings").select("*", { count: "exact", head: true }).eq("mentor_id", user.id);
 
+  // Fetch next mentorship session
+  const { data: nextSession } = await supabase
+    .from("mentor_bookings")
+    .select("id, scheduled_at, status, student:student_id(full_name)")
+    .eq("mentor_id", user.id)
+    .eq("status", "confirmed")
+    .gte("scheduled_at", new Date().toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <div id="mentor-dash" className="relative">
+      {nextSession && isApproved && (
+        <div className="mb-8 ai-border p-5 bg-gradient-to-r from-[var(--c-primary)]/10 to-[var(--c-secondary)]/10 border-[var(--c-primary)]/30 flex items-center justify-between gap-6 flex-wrap animate-in fade-in slide-in-from-top duration-500">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--c-primary)]/20 flex items-center justify-center animate-pulse">
+              <span className="material-symbols-outlined text-[var(--c-primary)] text-3xl">groups</span>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white mb-0.5">Next Student: {(nextSession.student as any)?.full_name}</h4>
+              <p className="text-xs text-[var(--c-muted)]">
+                {new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(nextSession.scheduled_at))}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/mentordashboard/sessions" className="btn-secondary py-2 px-4 text-xs">
+              Manage
+            </Link>
+            <Link href={`/dashboard/call/${nextSession.id}`} className="btn-primary py-2 px-6 text-xs shadow-lg shadow-[var(--c-primary)]/20">
+              Join Call
+            </Link>
+          </div>
+        </div>
+      )}
       <div className={`mb-7 ${!isApproved ? 'opacity-40 grayscale-[0.5]' : ''}`}>
         <h1 className="font-heading text-[32px] font-black m-0 mb-1.5 text-[var(--c-text)] tracking-tight">
           Mentor Dashboard
