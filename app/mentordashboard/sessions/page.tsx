@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from "next/link";
+import SessionChatDrawer from "@/components/SessionChatDrawer";
 
 type Booking = {
   id: string;
@@ -19,6 +20,7 @@ export default function MentorSessionsPage() {
   const [sessions, setSessions] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -143,39 +145,57 @@ export default function MentorSessionsPage() {
                     {session.status}
                   </span>
 
-                  {isPending && isMentor && (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleStatusUpdate(session.id, 'confirmed', session.student_id)}
-                        className="btn-primary py-2 px-4 text-xs"
-                      >
-                        Accept
-                      </button>
-                      <button 
-                        onClick={() => handleStatusUpdate(session.id, 'cancelled', session.student_id)}
-                        className="btn-secondary py-2 px-4 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setActiveChat({ id: session.id, name: otherParty || "Unknown" })}
+                      className="w-10 h-10 rounded-xl bg-[var(--c-bg3)] hover:bg-[var(--c-muted)]/20 flex items-center justify-center transition-all text-[var(--c-text)]"
+                      title="Chat with student"
+                    >
+                      <span className="material-symbols-outlined">forum</span>
+                    </button>
 
-                  {canJoin && (
-                    <Link href={`/dashboard/call/${session.id}`} className="btn-primary py-2 px-6 text-sm">
-                      Join Call
-                      <span className="material-symbols-outlined text-[18px] ml-1">videocam</span>
-                    </Link>
-                  )}
-                  {session.status === "completed" && (
-                    <Link href={`/mentordashboard/review/${session.id}`} className="btn-secondary py-2 px-6 text-sm">
-                      View Review
-                    </Link>
-                  )}
+                    {isPending && isMentor && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleStatusUpdate(session.id, 'confirmed', session.student_id)}
+                          className="btn-primary py-2 px-4 text-xs"
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          onClick={() => handleStatusUpdate(session.id, 'cancelled', session.student_id)}
+                          className="btn-secondary py-2 px-4 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )}
+
+                    {canJoin && (
+                      <Link href={`/dashboard/call/${session.id}`} className="btn-primary py-2 px-6 text-sm">
+                        Join Call
+                        <span className="material-symbols-outlined text-[18px] ml-1">videocam</span>
+                      </Link>
+                    )}
+                    {session.status === "completed" && (
+                      <Link href={`/mentordashboard/review/${session.id}`} className="btn-secondary py-2 px-6 text-sm">
+                        View Review
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {activeChat && (
+        <SessionChatDrawer 
+          bookingId={activeChat.id} 
+          otherPartyName={activeChat.name} 
+          onClose={() => setActiveChat(null)} 
+        />
       )}
     </div>
   );

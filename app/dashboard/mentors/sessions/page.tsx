@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from "next/link";
+import SessionChatDrawer from "@/components/SessionChatDrawer";
 
 type Booking = {
   id: string;
@@ -19,6 +20,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -122,28 +124,46 @@ export default function SessionsPage() {
                     <span className="text-xs text-amber-400 font-medium italic">Waiting for mentor...</span>
                   )}
 
-                  {canJoin ? (
-                    <Link 
-                      href={`/dashboard/call/${session.id}`}
-                      className="btn-primary py-2 px-6 text-sm flex items-center gap-2"
-                      onClick={() => alert("Simulating Payment Gateway... Success! Redirecting to call.")}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setActiveChat({ id: session.id, name: otherParty || "Unknown" })}
+                      className="w-10 h-10 rounded-xl bg-[var(--c-bg3)] hover:bg-[var(--c-muted)]/20 flex items-center justify-center transition-all text-[var(--c-text)]"
+                      title="Chat with other party"
                     >
-                      Pay & Join
-                      <span className="material-symbols-outlined text-[18px]">payments</span>
-                    </Link>
-                  ) : session.status === "completed" ? (
-                    <Link 
-                      href={`/dashboard/review/${session.id}`}
-                      className="btn-secondary py-2 px-6 text-sm"
-                    >
-                      View Review
-                    </Link>
-                  ) : null}
+                      <span className="material-symbols-outlined">forum</span>
+                    </button>
+
+                    {canJoin ? (
+                      <Link 
+                        href={`/dashboard/call/${session.id}`}
+                        className="btn-primary py-2 px-6 text-sm flex items-center gap-2"
+                        onClick={() => alert("Simulating Payment Gateway... Success! Redirecting to call.")}
+                      >
+                        Pay & Join
+                        <span className="material-symbols-outlined text-[18px]">payments</span>
+                      </Link>
+                    ) : session.status === "completed" ? (
+                      <Link 
+                        href={`/dashboard/review/${session.id}`}
+                        className="btn-secondary py-2 px-6 text-sm"
+                      >
+                        View Review
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {activeChat && (
+        <SessionChatDrawer 
+          bookingId={activeChat.id} 
+          otherPartyName={activeChat.name} 
+          onClose={() => setActiveChat(null)} 
+        />
       )}
     </div>
   );
