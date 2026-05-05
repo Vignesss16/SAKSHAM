@@ -78,7 +78,7 @@ export default async function MentorDashboardPage() {
       <div className={`grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5 mb-8 ${!isApproved ? 'opacity-40 grayscale-[0.5]' : ''}`}>
         <div className="stat-card" style={{ borderTopColor: "var(--c-primary)" }}>
           <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Total Earnings</span>
-          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">$0.00</span>
+          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">₹0.00</span>
         </div>
         <div className="stat-card" style={{ borderTopColor: "var(--c-secondary)" }}>
           <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Active Sessions</span>

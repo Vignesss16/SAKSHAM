@@ -99,7 +99,7 @@ export default function MentorsPage() {
 
                 <div className="mt-auto pt-4 border-t border-[var(--c-border)] flex items-center justify-between">
                   <div className="font-bold text-[var(--c-text)]">
-                    ${mentor.hourly_rate} <span className="text-xs font-normal text-[var(--c-muted)]">/ session</span>
+                    ₹{mentor.hourly_rate} <span className="text-xs font-normal text-[var(--c-muted)]">/ session</span>
                   </div>
                   <Link href={`/dashboard/mentors/${mentor.user_id}`} className="btn-primary text-xs px-4 py-2">
                     View Profile

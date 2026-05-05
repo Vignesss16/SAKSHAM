@@ -37,11 +37,19 @@ export default function MentorDetailPage() {
     async function fetchMentor() {
       const { data, error } = await supabase
         .from("mentors")
-        .select(`*, profiles!inner(avatar_url)`)
+        .select(`*, profiles(full_name, avatar_url)`)
         .eq("user_id", params.id)
         .single();
       
-      if (data) setMentor(data as Mentor);
+      if (data) {
+        // Handle joined profile data correctly
+        const mentorData = {
+          ...data,
+          full_name: data.profiles?.full_name || "Mentor",
+          avatar_url: data.profiles?.avatar_url
+        };
+        setMentor(mentorData as any);
+      }
       setLoading(false);
     }
     fetchMentor();
@@ -103,18 +111,13 @@ export default function MentorDetailPage() {
       {/* Mentor Info */}
       <div className="md:col-span-2 space-y-6">
         <div className="glass p-8 flex items-start gap-6">
-          {(() => {
-            const profiles = mentor.profiles;
-            const avatarUrl = Array.isArray(profiles) ? profiles[0]?.avatar_url : profiles?.avatar_url;
-            
-            return avatarUrl ? (
-              <img src={avatarUrl} alt={mentor.full_name} className="w-24 h-24 rounded-full object-cover border-4 border-[var(--c-primary)]" />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-bold text-[#001f28] text-3xl">
-                {mentor.full_name.charAt(0)}
-              </div>
-            );
-          })()}
+          {mentor.avatar_url ? (
+            <img src={mentor.avatar_url} alt={mentor.full_name} className="w-24 h-24 rounded-full object-cover border-4 border-[var(--c-primary)]" />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] flex items-center justify-center font-bold text-[#001f28] text-3xl">
+              {mentor.full_name?.charAt(0) || "M"}
+            </div>
+          )}
           
           <div className="flex-1">
             <h1 className="font-['Plus_Jakarta_Sans'] text-3xl font-black text-[var(--c-text)] m-0">
@@ -160,7 +163,7 @@ export default function MentorDetailPage() {
           <div className="flex justify-between items-end mb-6">
             <span className="text-[var(--c-muted)] text-sm">Session Rate</span>
             <span className="font-['Plus_Jakarta_Sans'] text-2xl font-black text-[var(--c-text)]">
-              ${mentor.hourly_rate} <span className="text-sm text-[var(--c-muted)] font-normal">/ hr</span>
+              ₹{mentor.hourly_rate} <span className="text-sm text-[var(--c-muted)] font-normal">/ hr</span>
             </span>
           </div>
 
@@ -178,11 +181,11 @@ export default function MentorDetailPage() {
           <div className="bg-[var(--c-bg1)] p-4 rounded-xl mb-6 text-sm">
             <div className="flex justify-between mb-2 text-[var(--c-muted)]">
               <span>Platform Fee (20%)</span>
-              <span>${Math.round(mentor.hourly_rate * 0.20)}</span>
+              <span>₹{Math.round(mentor.hourly_rate * 0.20)}</span>
             </div>
             <div className="flex justify-between font-bold text-[var(--c-text)] pt-2 border-t border-[var(--c-border)]">
               <span>Total Price</span>
-              <span>${mentor.hourly_rate}</span>
+              <span>₹{mentor.hourly_rate}</span>
             </div>
           </div>
 
