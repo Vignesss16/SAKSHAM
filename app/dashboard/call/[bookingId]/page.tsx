@@ -100,6 +100,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   const [showChat, setShowChat] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'alert' } | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
