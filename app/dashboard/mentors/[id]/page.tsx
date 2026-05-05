@@ -15,7 +15,8 @@ type Mentor = {
   rating: number;
   total_reviews: number;
   hourly_rate: number;
-  profiles: { avatar_url: string } | { avatar_url: string }[];
+  avatar_url?: string; // Included from join
+  profiles?: { full_name: string, avatar_url: string };
 };
 
 export default function MentorDetailPage() {
