@@ -374,6 +374,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                   className="bg-transparent border border-[#242424] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#242424] active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined">compare_arrows</span> Compare with Previous
+                </button>
               </div>
             </div>
 
