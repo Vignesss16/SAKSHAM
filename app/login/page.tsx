@@ -29,7 +29,7 @@ function LoginContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         // If already logged in, redirect based on role parameter
-        const redirectPath = searchParams.get('redirect') || (isMentor ? '/dashboard/mentor-register' : '/dashboard')
+        const redirectPath = searchParams.get('redirect') || (isMentor ? '/mentordashboard' : '/dashboard')
         window.location.href = redirectPath
       }
     }
@@ -49,7 +49,7 @@ function LoginContent() {
       setSuccess(true)
       localStorage.setItem('user_name', data.user?.user_metadata?.full_name || signin.email.split('@')[0])
       
-      const redirectPath = searchParams.get('redirect') || (isMentor ? '/dashboard/mentor-register' : '/dashboard')
+      const redirectPath = searchParams.get('redirect') || (isMentor ? '/mentordashboard' : '/dashboard')
       setTimeout(() => { window.location.href = redirectPath }, 1200)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -76,7 +76,7 @@ function LoginContent() {
       setSuccess(true)
       localStorage.setItem('user_name', signup.name || signup.email.split('@')[0])
       
-      const redirectPath = searchParams.get('redirect') || (isMentor ? '/dashboard/mentor-register' : '/dashboard')
+      const redirectPath = searchParams.get('redirect') || (isMentor ? '/mentordashboard' : '/dashboard')
       setTimeout(() => { window.location.href = redirectPath }, 1200)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
