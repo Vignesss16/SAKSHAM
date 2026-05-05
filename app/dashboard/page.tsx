@@ -55,6 +55,52 @@ export default async function DashboardPage() {
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id);
     certificatesEarned = count || 0;
+
+    // Get role
+    const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const userRole = roleData?.role || "student";
+
+    if (userRole === "mentor") {
+      // Mentor Dashboard logic
+      const { data: mentorData } = await supabase.from("mentors").select("*").eq("user_id", user.id).single();
+      const { count: sessionCount } = await supabase.from("mentor_bookings").select("*", { count: "exact", head: true }).eq("mentor_id", user.id);
+      
+      return (
+        <div id="mentor-dash">
+           <div className="mb-7">
+            <h1 className="font-heading text-[32px] font-black m-0 mb-1.5 text-[var(--c-text)] tracking-tight">
+              Mentor Dashboard
+            </h1>
+            <p className="text-muted text-[15px] m-0">Manage your students and track your earnings.</p>
+          </div>
+
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5 mb-8">
+            <div className="stat-card" style={{ borderTopColor: "var(--c-primary)" }}>
+              <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Total Earnings</span>
+              <span className="font-heading text-[40px] font-black text-[var(--c-text)]">$0.00</span>
+            </div>
+            <div className="stat-card" style={{ borderTopColor: "var(--c-secondary)" }}>
+              <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Active Sessions</span>
+              <span className="font-heading text-[40px] font-black text-[var(--c-text)]">{sessionCount || 0}</span>
+            </div>
+            <div className="stat-card" style={{ borderTopColor: "var(--c-tertiary)" }}>
+              <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Your Rating</span>
+              <span className="font-heading text-[40px] font-black text-[var(--c-text)]">{mentorData?.rating || "5.0"}</span>
+            </div>
+          </div>
+
+          <div className="glass p-8 ai-border flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="font-heading text-xl font-bold mb-2">Review Your Upcoming Sessions</h3>
+              <p className="text-muted text-sm max-w-md">See who you're helping next and prepare for your consultations.</p>
+            </div>
+            <Link href="/dashboard/mentors/sessions" className="btn-primary py-3 px-8">
+              View All Sessions
+            </Link>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
@@ -216,6 +262,22 @@ export default async function DashboardPage() {
               Certificates
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Become a Mentor Advertisement */}
+      <div className="mt-12 glass p-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-[var(--c-primary)]/20 shadow-xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--c-primary)]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+        <div className="relative z-10">
+          <div className="badge badge-teal mb-4 px-3 py-1 text-[11px] font-bold tracking-widest uppercase">Expert Network</div>
+          <h2 className="font-heading text-3xl font-black text-[var(--c-text)] mb-3">Share your knowledge. <br/><span className="text-[var(--c-primary)]">Become a Mentor.</span></h2>
+          <p className="text-muted text-[15px] max-w-[500px] leading-relaxed">Join our community of industry experts, help students crack their dream interviews, and earn up to $100/hr while you're at it.</p>
+        </div>
+        <div className="relative z-10 shrink-0">
+          <Link href="/dashboard/mentor-register" className="btn-primary py-4 px-10 text-[16px] shadow-lg shadow-[var(--c-primary)]/20 hover:-translate-y-1 transition-transform">
+            Apply as Mentor
+            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+          </Link>
         </div>
       </div>
     </div>

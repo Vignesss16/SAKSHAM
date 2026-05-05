@@ -132,11 +132,27 @@ export default function DashboardLayout({
     return pathname.startsWith(item.href);
   };
 
-  const dynamicNavItems = [
-    ...navItems.slice(0, 5),
+  const studentNavItems = [
+    { href: "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
+    { href: "/dashboard/daily", icon: "task_alt", label: "Daily Challenge" },
+    { href: "/dashboard/new", icon: "mic", label: "AI Interview" },
+    { href: "/dashboard/resume", icon: "description", label: "AI Resume Analyzer" },
+    { href: "/dashboard/mentors", icon: "groups", label: "Find a Mentor" },
     { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
-    ...navItems.slice(5)
+    { href: "/dashboard/certificates", icon: "verified", label: "Certificates" },
+    { href: "/dashboard/reports", icon: "analytics", label: "Reports" },
+    { href: "/dashboard/leaderboard", icon: "leaderboard", label: "Leaderboard" },
+    { href: "/dashboard/settings", icon: "settings", label: "Settings" },
   ];
+
+  const mentorNavItems = [
+    { href: "/dashboard", icon: "dashboard", label: "Dashboard", exact: true },
+    { href: "/dashboard/mentors/sessions", icon: "event_repeat", label: "My Sessions" },
+    { href: "/dashboard/settings", icon: "settings", label: "Profile & Settings" },
+    { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },
+  ];
+
+  const dynamicNavItems = userRole === "mentor" ? mentorNavItems : studentNavItems;
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
@@ -188,15 +204,17 @@ export default function DashboardLayout({
         </nav>
 
         <div className="mt-auto pt-5 border-t border-[var(--c-border)] flex flex-col gap-1">
-          <Link
-            href="/dashboard/new"
-            className="btn-primary w-full justify-center text-[13px] p-3 mb-2"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              add_circle
-            </span>
-            New Interview
-          </Link>
+          {userRole !== "mentor" && (
+            <Link
+              href="/dashboard/new"
+              className="btn-primary w-full justify-center text-[13px] p-3 mb-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                add_circle
+              </span>
+              New Interview
+            </Link>
+          )}
           <button onClick={handleSignOut} className="sidebar-link w-full text-left bg-transparent border-none">
             <span className="material-symbols-outlined text-[20px]">logout</span>
             Log Out
