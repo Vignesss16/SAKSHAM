@@ -68,12 +68,6 @@ export default function DashboardLayout({
   const [showSearch, setShowSearch] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const searchResults = searchQuery.trim()
-    ? ALL_PAGES.filter(p =>
-        p.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.desc.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
 
   useEffect(() => {
     const saved = localStorage.getItem('saksham-theme') || 'dark';
