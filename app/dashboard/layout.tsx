@@ -146,8 +146,9 @@ export default function DashboardLayout({
     { href: "/dashboard/reports", icon: "payments", label: "Earnings & Reports" },
   ];
 
-  const dynamicNavItems = userRole === "mentor" ? mentorNavItems : studentNavItems;
-  const dynamicAllPages = userRole === "mentor" 
+  const isRegistering = pathname === "/dashboard/mentor-register";
+  const dynamicNavItems = (userRole === "mentor" || isRegistering) ? mentorNavItems : studentNavItems;
+  const dynamicAllPages = (userRole === "mentor" || isRegistering) 
     ? ALL_PAGES.filter(p => !['/dashboard/daily', '/dashboard/new', '/dashboard/resume', '/dashboard/leaderboard', '/dashboard/certificates'].includes(p.href))
     : ALL_PAGES;
 
@@ -302,7 +303,7 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {userRole !== "mentor" && <AIChatbot />}
+      {(userRole !== "mentor" && !isRegistering) && <AIChatbot />}
     </div>
   );
 }
