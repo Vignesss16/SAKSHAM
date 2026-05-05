@@ -57,7 +57,7 @@ export default function MentorLandingPage() {
               Join the Expert Network
               <span className="material-symbols-outlined ml-2">rocket_launch</span>
             </Link>
-            <Link href="/login?role=mentor" className="group flex items-center gap-3 text-white font-bold text-lg no-underline hover:text-[var(--c-primary)] transition-colors">
+            <Link href="/login?role=mentor&redirect=/mentordashboard" className="group flex items-center gap-3 text-white font-bold text-lg no-underline hover:text-[var(--c-primary)] transition-colors">
               Access Dashboard
               <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--c-primary)] group-hover:text-[#001f28] transition-all">
                 <span className="material-symbols-outlined">arrow_forward</span>
