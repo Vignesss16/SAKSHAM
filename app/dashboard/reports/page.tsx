@@ -374,8 +374,40 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                   className="bg-transparent border border-[#242424] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#242424] active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined">compare_arrows</span> Compare with Previous
-                </button>
               </div>
+            </div>
+
+            {/* Performance Recommendations */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {score < 80 && (
+                <div className="bg-[#1A1A1A] border border-[#00d1ff]/20 rounded-xl p-5 flex items-start gap-4 hover:border-[#00d1ff]/40 transition-colors">
+                  <div className="bg-[#00d1ff]/10 p-2 rounded-lg shrink-0">
+                    <span className="material-symbols-outlined text-[#00d1ff]">person_search</span>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-bold text-sm mb-1">Book an Expert Consultation</h4>
+                    <p className="text-[#859399] text-xs leading-relaxed mb-3">Your score suggests some areas need professional polish. Connect with a mentor for personalized 1-on-1 coaching.</p>
+                    <Link href="/dashboard/mentors" className="text-[#00d1ff] text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
+                      Find a Mentor <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+              
+              {metrics.some((m: any) => m.label === "Technical Accuracy" && m.score < 75) && (
+                <div className="bg-[#1A1A1A] border border-[#03c6b2]/20 rounded-xl p-5 flex items-start gap-4 hover:border-[#03c6b2]/40 transition-colors">
+                  <div className="bg-[#03c6b2]/10 p-2 rounded-lg shrink-0">
+                    <span className="material-symbols-outlined text-[#03c6b2]">code_blocks</span>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-bold text-sm mb-1">Strengthen Your DSA</h4>
+                    <p className="text-[#859399] text-xs leading-relaxed mb-3">Technical accuracy can be improved. Solve our daily challenges to stay sharp with data structures and algorithms.</p>
+                    <Link href="/dashboard/daily" className="text-[#03c6b2] text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
+                      Practice Daily <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-6 h-64">

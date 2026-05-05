@@ -68,21 +68,6 @@ export default async function MentorDashboardPage() {
 
   return (
     <div id="mentor-dash" className="relative">
-      {!isApproved && (
-        <div className="absolute inset-0 z-10 bg-[var(--c-bg)]/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl border border-white/5 min-h-[400px]">
-          <div className="glass p-10 text-center max-w-md ai-border shadow-2xl">
-            <div className="w-16 h-16 bg-[var(--c-primary)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="material-symbols-outlined text-4xl text-[var(--c-primary)] animate-pulse">verified_user</span>
-            </div>
-            <h2 className="text-2xl font-black mb-3">Application Under Review</h2>
-            <p className="text-muted mb-6 text-sm">We are currently verifying your professional background. You will get full access to these features within a few hours of approval.</p>
-            <Link href="/mentordashboard/apply" className="btn-primary py-3 px-8 text-sm">
-              View Application Status
-            </Link>
-          </div>
-        </div>
-      )}
-
       <div className={`mb-7 ${!isApproved ? 'opacity-40 grayscale-[0.5]' : ''}`}>
         <h1 className="font-heading text-[32px] font-black m-0 mb-1.5 text-[var(--c-text)] tracking-tight">
           Mentor Dashboard
@@ -101,7 +86,9 @@ export default async function MentorDashboardPage() {
         </div>
         <div className="stat-card" style={{ borderTopColor: "var(--c-tertiary)" }}>
           <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Your Rating</span>
-          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">{mentorData?.rating || "5.0"}</span>
+          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">
+            {mentorData?.rating && mentorData.rating > 0 ? mentorData.rating.toFixed(1) : "New"}
+          </span>
         </div>
       </div>
 

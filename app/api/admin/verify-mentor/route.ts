@@ -45,7 +45,6 @@ export async function POST(req: Request) {
         .from('mentors')
         .insert({
           user_id: app.user_id,
-          full_name: app.full_name,
           company: app.company,
           job_role: app.job_role,
           experience_years: app.experience_years,

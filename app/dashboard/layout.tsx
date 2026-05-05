@@ -167,7 +167,7 @@ export default function DashboardLayout({
       setIsMentorFlow(isMentor);
 
       // If they are in the mentor flow but at /dashboard, send them to the right place
-      if (isMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/mentors') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
+      if (isMentor && pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') && !pathname.startsWith('/dashboard/reports')) {
         router.replace('/mentordashboard');
       }
     }

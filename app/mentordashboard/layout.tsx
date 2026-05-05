@@ -52,6 +52,9 @@ export default function MentorDashboardLayout({
     applyTheme(saved);
   }, []);
 
+  const [isApproved, setIsApproved] = useState(true);
+  const [checkingApproval, setCheckingApproval] = useState(true);
+
   useEffect(() => {
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -61,10 +64,12 @@ export default function MentorDashboardLayout({
           setUserName(data.full_name || user.user_metadata?.full_name || "Expert");
           setAvatarUrl(data.avatar_url || user.user_metadata?.avatar_url || "");
           setUserRole(data.role || "Mentor");
+          setIsApproved(data.role === "mentor");
         }
       } else {
         router.push("/login?role=mentor");
       }
+      setCheckingApproval(false);
     }
     loadUser();
   }, [supabase, router]);
@@ -76,16 +81,18 @@ export default function MentorDashboardLayout({
   };
 
   const handleThemeToggle = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('saksham-theme', newTheme);
-    applyTheme(newTheme);
+    const themeToSave = theme === 'dark' ? 'light' : 'dark';
+    setTheme(themeToSave);
+    localStorage.setItem('saksham-theme', themeToSave);
+    applyTheme(themeToSave);
   };
 
   const isActive = (item: { href: string; exact?: boolean }) => {
     if (item.exact) return pathname === item.href;
     return pathname.startsWith(item.href);
   };
+
+  const showOverlay = !isApproved && pathname !== "/mentordashboard/settings" && pathname !== "/mentordashboard/apply";
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
@@ -162,8 +169,35 @@ export default function MentorDashboardLayout({
           </div>
         </header>
 
-        <main className="p-8 flex-1">
-          <div className="max-w-[1200px] mx-auto">{children}</div>
+        <main className="p-8 flex-1 relative">
+          {checkingApproval ? (
+            <div className="flex justify-center p-12">
+              <div className="w-8 h-8 border-4 border-[var(--c-primary)] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <>
+              {showOverlay && (
+                <div className="absolute inset-0 z-[60] bg-[var(--c-bg)]/60 backdrop-blur-[4px] flex items-center justify-center p-8">
+                  <div className="glass p-10 text-center max-w-md ai-border shadow-2xl">
+                    <div className="w-16 h-16 bg-[var(--c-primary)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <span className="material-symbols-outlined text-4xl text-[var(--c-primary)] animate-pulse">verified_user</span>
+                    </div>
+                    <h2 className="text-2xl font-black mb-3 text-white">Application Under Review</h2>
+                    <p className="text-muted mb-6 text-sm">We are currently verifying your professional background. You will get full access to these features within a few hours of approval.</p>
+                    <div className="flex flex-col gap-3">
+                      <Link href="/mentordashboard/settings" className="btn-primary py-3 px-8 text-sm justify-center">
+                        Complete Profile & Skills
+                      </Link>
+                      <button onClick={handleSignOut} className="sidebar-link justify-center text-sm">
+                        Log Out
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="max-w-[1200px] mx-auto">{children}</div>
+            </>
+          )}
         </main>
       </div>
     </div>
