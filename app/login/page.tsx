@@ -36,7 +36,9 @@ function LoginContent() {
       if (error) throw error
       setSuccess(true)
       localStorage.setItem('user_name', data.user?.user_metadata?.full_name || signin.email.split('@')[0])
-      setTimeout(() => { window.location.href = '/dashboard' }, 1200)
+      
+      const redirectPath = searchParams.get('redirect') || '/dashboard'
+      setTimeout(() => { window.location.href = redirectPath }, 1200)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -61,7 +63,9 @@ function LoginContent() {
       if (error) throw error
       setSuccess(true)
       localStorage.setItem('user_name', signup.name || signup.email.split('@')[0])
-      setTimeout(() => { window.location.href = '/dashboard' }, 1200)
+      
+      const redirectPath = searchParams.get('redirect') || '/dashboard'
+      setTimeout(() => { window.location.href = redirectPath }, 1200)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {

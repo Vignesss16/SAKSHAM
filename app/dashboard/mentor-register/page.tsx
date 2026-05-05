@@ -28,7 +28,7 @@ export default function MentorRegisterPage() {
     async function checkStatus() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/login");
+        router.push("/login?role=mentor&redirect=/dashboard/mentor-register");
         return;
       }
 
