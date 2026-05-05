@@ -25,6 +25,10 @@ export default function HomePage() {
                   onMouseOut={e => (e.currentTarget.style.color = 'var(--c-muted)')}
                 >{item}</a>
               ))}
+              <Link href="/mentor" style={{ color: 'var(--c-secondary)', textDecoration: 'none', fontSize: 14, fontFamily: "'Plus Jakarta Sans'", fontWeight: 600, transition: 'color 0.2s' }}
+                onMouseOver={e => (e.currentTarget.style.color = 'var(--c-text)')}
+                onMouseOut={e => (e.currentTarget.style.color = 'var(--c-secondary)')}
+              >Mentors</Link>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
