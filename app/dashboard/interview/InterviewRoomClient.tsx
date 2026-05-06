@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import type { RTMClient } from 'agora-rtm';
+import { setParameter } from 'agora-rtc-sdk-ng/esm';
 import {
   AgoraRTCProvider,
   useRTCClient,
@@ -16,8 +17,6 @@ import {
   RemoteUser,
   UID,
 } from 'agora-rtc-react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
-import AgoraRTM from 'agora-rtm';
 import {
   AgoraVoiceAI,
   AgoraVoiceAIEvents,
@@ -48,6 +47,7 @@ import type {
   AgoraRenewalTokens,
 } from '@/types/conversation';
 import { getConversationIssueSeverity, type ConnectionIssue } from '@/components/ConversationErrorCard';
+import AgoraRTC from 'agora-rtc-react';
 
 const MAX_CONNECTION_ISSUES = 6;
 
@@ -118,7 +118,7 @@ function InterviewContent({
   useEffect(() => {
     if (!client) return;
     try {
-      (AgoraRTC as any).setParameter('ENABLE_AUDIO_PTS', true);
+      setParameter('ENABLE_AUDIO_PTS', true);
     } catch (error) {
       console.warn('Could not set ENABLE_AUDIO_PTS:', error);
     }
@@ -201,7 +201,7 @@ function InterviewContent({
     );
     
     if (hasAgentTriggeredInHistory && !isCodingRound) {
-      console.log("🎯 Coding Round Triggered by AI phrase in history.");
+      console.log("≡ƒÄ» Coding Round Triggered by AI phrase in history.");
       setIsCodingRound(true);
       
       // Stop the agent
@@ -496,7 +496,7 @@ function InterviewContent({
       </div>
 
       <footer className="bg-[#121212] border-t border-[#242424] py-2 px-8 flex items-center justify-between shrink-0">
-        <span className="text-xs text-gray-600">© 2024 SAKSHAM.AI. Professional Excellence.</span>
+        <span className="text-xs text-gray-600">┬⌐ 2024 SAKSHAM.AI. Professional Excellence.</span>
         <div className="flex gap-6">
           <a href="#" className="text-xs text-gray-600 hover:text-gray-300 transition-colors">Privacy Policy</a>
           <a href="#" className="text-xs text-gray-600 hover:text-gray-300 transition-colors">Terms of Service</a>
@@ -514,14 +514,21 @@ export default function InterviewRoomClient() {
   const [error, setError] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
 
-  // Initialize the Agora RTC client once
-  const client = useRTCClient(useMemo(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as any, []));
+  // Agora Provider ref
+  const { default: agoraRTC } = require('agora-rtc-react');
+  const clientRef = useRef<ReturnType<typeof agoraRTC.createClient> | null>(null);
 
   useEffect(() => {
     async function start() {
       try {
         const prompt = localStorage.getItem('omnidimension_system_prompt') || "You are an AI interviewer.";
         setSystemPrompt(prompt);
+
+        // Preload
+        await Promise.all([
+          import('agora-rtc-react').catch(() => {}),
+          import('agora-rtm').catch(() => {})
+        ]);
 
         const randomUid = Math.floor(Math.random() * 65500) + 1;
 
@@ -531,6 +538,8 @@ export default function InterviewRoomClient() {
         const responseData = await agoraResponse.json();
 
         // 2. Start Agent and setup RTM
+        const { default: AgoraRTM } = await import('agora-rtm');
+        
         const [agentData, rtm] = await Promise.all([
           fetch('/api/invite-agent', {
             method: 'POST',
@@ -556,6 +565,10 @@ export default function InterviewRoomClient() {
 
         setRtmClient(rtm);
         setAgoraData({ ...responseData, agentId: agentData?.agent_id, uid: String(randomUid) });
+
+        if (!clientRef.current) {
+          clientRef.current = agoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        }
       } catch (err: any) {
         setError(err.message || "Failed to start conversation");
       } finally {
@@ -576,7 +589,7 @@ export default function InterviewRoomClient() {
     );
   }
 
-  if (error || !agoraData || !rtmClient || !client) {
+  if (error || !agoraData || !rtmClient || !clientRef.current) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0e1417] text-white">
         <p className="text-red-400">Error: {error || "Failed to load"}</p>
@@ -584,9 +597,11 @@ export default function InterviewRoomClient() {
     );
   }
 
+  const { AgoraRTCProvider } = require('agora-rtc-react');
+
   return (
     <ErrorBoundary>
-      <AgoraRTCProvider client={client as any}>
+      <AgoraRTCProvider client={clientRef.current as any}>
         <InterviewContent 
           agoraData={agoraData} 
           rtmClient={rtmClient} 
