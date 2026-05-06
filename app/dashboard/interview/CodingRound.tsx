@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Loader2, Play, CheckCircle2 } from 'lucide-react';
+import { useGazeDetection } from "@/hooks/useGazeDetection";
+import GazeProctor from "@/components/GazeProctor";
+import { createClient } from "@/lib/supabase/client";
 
 interface CodingQuestion {
   title: string;
@@ -27,6 +30,36 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   // Sequence state
   const [questionIndex, setQuestionIndex] = useState(0); // 0 = Easy, 1 = Medium
   const [allSubmissions, setAllSubmissions] = useState<string[]>([]);
+
+  const MAX_STRIKES = 3;
+
+  const { videoRef, strikes, status } = useGazeDetection({
+    enabled: true,  // CodingRound only mounts when the coding session is active
+    maxStrikes: MAX_STRIKES,
+    onStrike: async (count) => {
+      if (count < MAX_STRIKES) {
+        setOutput(
+          `⚠️ Eye-tracking warning ${count}/${MAX_STRIKES}. ` +
+          `Please keep your eyes on the screen.`
+        );
+      }
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("proctoring_events").insert({
+          user_id: user.id,
+          session_type: "mock_interview",
+          strike_number: count,
+          terminated: count >= MAX_STRIKES,
+        });
+      }
+    },
+    onTerminate: () => {
+      // Submit whatever code exists and move on
+      const submission = `// [Session terminated by anti-cheat]\n${code}`;
+      onComplete(submission, language);
+    },
+  });
 
   const fetchQuestion = async (difficultyOverride: string) => {
     setIsLoading(true);
@@ -125,8 +158,15 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   }
 
   return (
-    <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
-      {/* Left: Problem Description */}
+    <div className="relative h-full flex flex-col w-full">
+      <GazeProctor
+        videoRef={videoRef}
+        strikes={strikes}
+        maxStrikes={MAX_STRIKES}
+        status={status}
+      />
+      <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
+        {/* Left: Problem Description */}
       <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
         <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-8 flex flex-col gap-6 flex-1 shadow-sm overflow-hidden flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -206,5 +246,6 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
         </div>
       </section>
     </main>
+    </div>
   );
 }

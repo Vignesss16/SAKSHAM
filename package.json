@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
