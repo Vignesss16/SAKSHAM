@@ -47,6 +47,7 @@ function ReportsContent() {
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
   const [interviews, setInterviews] = useState<any[]>([]);
   const [selectedInterviewId, setSelectedInterviewId] = useState<string | null>(null);
+  const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   useEffect(() => {
     async function fetchReport() {
       setTranscriptComparisons(null);
@@ -179,6 +180,31 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
     }
   };
 
+  const setReportAndNavigate = (interviewId: string) => {
+    setReport(null);
+    router.push(`/dashboard/reports?id=${interviewId}`);
+  };
+
+  const handleGenerateSuggestions = async () => {
+    if (!report?.id) return;
+    setGeneratingSuggestions(true);
+    try {
+      const res = await fetch('/api/generate-mentor-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: report.id }),
+      });
+      const data = await res.json();
+      if (data.suggestedMentors) {
+        setReport({ ...report, suggestedMentors: data.suggestedMentors });
+      }
+    } catch (err) {
+      console.error("Failed to generate suggestions", err);
+    } finally {
+      setGeneratingSuggestions(false);
+    }
+  };
+
   const handleAnalyzeTranscript = async () => {
     if (!report?.transcript) return;
     setAnalyzingTranscript(true);
@@ -253,7 +279,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                 <select 
                   value={report.id || ''} 
                   onChange={(e) => {
-                    router.push(`/dashboard/reports?id=${e.target.value}`);
+                    setReportAndNavigate(e.target.value);
                   }}
                   className="bg-transparent text-white text-xs font-bold border-none focus:ring-0 outline-none pr-8 cursor-pointer appearance-none"
                 >
@@ -620,7 +646,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
         </div>
         
         {/* AI Suggested Mentors */}
-        {report.suggestedMentors && report.suggestedMentors.length > 0 && (
+        {report.suggestedMentors && report.suggestedMentors.length > 0 ? (
           <div className="bg-[#1A1A1A] border border-[#00d1ff]/20 rounded-xl overflow-hidden shadow-[0_0_50px_-12px_rgba(0,209,255,0.15)]">
             <div className="bg-[#00d1ff]/10 px-6 py-4 border-b border-[#242424] flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-[#00d1ff] font-bold">
@@ -652,6 +678,25 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-8 text-center relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00d1ff]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative z-10 max-w-md mx-auto">
+              <div className="w-16 h-16 bg-[#242424] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3c494e] group-hover:border-[#00d1ff]/40 transition-all">
+                <span className="material-symbols-outlined text-3xl text-[#00d1ff] animate-pulse">psychology</span>
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Unlock AI Mentor Matching</h3>
+              <p className="text-[#859399] text-xs mb-6">This is an older report. Use our AI to analyze your performance and suggest the perfect mentors for your growth.</p>
+              <button 
+                onClick={handleGenerateSuggestions}
+                disabled={generatingSuggestions}
+                className="bg-[#00d1ff] text-[#001f28] px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+              >
+                {generatingSuggestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="material-symbols-outlined text-sm">bolt</span>}
+                {generatingSuggestions ? 'Matching...' : 'Find My Ideal Mentors'}
+              </button>
             </div>
           </div>
         )}
