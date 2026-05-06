@@ -618,6 +618,43 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
             </div>
           </div>
         </div>
+        
+        {/* AI Suggested Mentors */}
+        {report.suggestedMentors && report.suggestedMentors.length > 0 && (
+          <div className="bg-[#1A1A1A] border border-[#00d1ff]/20 rounded-xl overflow-hidden shadow-[0_0_50px_-12px_rgba(0,209,255,0.15)]">
+            <div className="bg-[#00d1ff]/10 px-6 py-4 border-b border-[#242424] flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-[#00d1ff] font-bold">
+                <span className="material-symbols-outlined">psychology</span> AI Personalized Mentor Recommendations
+              </h3>
+              <span className="text-[10px] font-black bg-[#00d1ff]/20 text-[#00d1ff] px-2 py-1 rounded border border-[#00d1ff]/30 uppercase tracking-tighter">Powered by SAKSHAM AI</span>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {report.suggestedMentors.map((mentor: any, idx: number) => (
+                <div key={idx} className="bg-[#0e1417] border border-[#242424] rounded-2xl p-5 hover:border-[#00d1ff]/40 transition-all group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#00d1ff]/10 to-transparent -mr-8 -mt-8 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                  
+                  <div className="flex items-start gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-[#242424] flex items-center justify-center border border-[#3c494e] group-hover:border-[#00d1ff]/50 transition-colors">
+                      <span className="material-symbols-outlined text-[#00d1ff] text-2xl">person</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-bold text-lg mb-1">{mentor.name}</h4>
+                      <p className="text-[#859399] text-xs mb-4 leading-relaxed line-clamp-3 italic">
+                        &ldquo;{mentor.reason}&rdquo;
+                      </p>
+                      <Link 
+                        href={`/dashboard/mentors?id=${mentor.id}`} 
+                        className="inline-flex items-center gap-2 bg-[#00d1ff]/10 hover:bg-[#00d1ff] text-[#00d1ff] hover:text-[#001f28] px-4 py-2 rounded-lg text-xs font-bold transition-all border border-[#00d1ff]/20 active:scale-95"
+                      >
+                        Book Session <span className="material-symbols-outlined text-sm">event_available</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recommended Resources */}
         <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl overflow-hidden">

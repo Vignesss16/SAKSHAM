@@ -31,6 +31,18 @@ export async function POST(req: Request) {
       console.warn('Warning: Empty transcript received in generate-report');
       safeTranscript = [{ uid: 'agent', text: 'The user did not speak during this interview segment.' }];
     }
+    
+    // Fetch mentors to provide suggestions
+    const { data: mentorsList } = await supabase
+      .from('mentors')
+      .select(`
+        user_id,
+        company,
+        job_role,
+        experience_years,
+        bio,
+        profiles!inner (full_name)
+      `);
 
     const prompt = `You are an expert technical interviewer evaluating a candidate.
     
@@ -65,8 +77,14 @@ export async function POST(req: Request) {
         { "title": "Improvement 1", "desc": "Description" },
         { "title": "Improvement 2", "desc": "Description" },
         { "title": "Improvement 3", "desc": "Description" }
+      ],
+      "suggestedMentors": [
+        { "id": "mentor_uuid", "name": "Mentor Name", "reason": "Specific reason why this mentor's expertise (e.g. System Design at Google) helps with the improvement area 'Improvement 1'." }
       ]
-    }`;
+    }
+    
+    Available Mentors to suggest from:
+    ${JSON.stringify(mentorsList || [], null, 2)}`;
 
     const reportData = await generateJSON<any>(geminiFlash, prompt);
 
