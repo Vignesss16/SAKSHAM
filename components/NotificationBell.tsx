@@ -35,7 +35,7 @@ export default function NotificationBell() {
       
       if (data) {
         setNotifications(data);
-        setUnreadCount(data.filter(n => !n.is_read).length);
+        setUnreadCount(data.filter((n: any) => !n.is_read).length);
       }
 
       // Realtime subscription for notifications
