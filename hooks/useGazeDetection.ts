@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 export type GazeStatus = "idle" | "calibrating" | "ok" | "warning" | "terminated";
 
 interface UseGazeDetectionOptions {
-  enabled: boolean;              // only run when challenge is active
-  maxStrikes?: number;           // default 3
-  gazeOffFrames?: number;        // frames before counting as "away" (default 45 = 1.5s)
+  enabled: boolean;
+  maxStrikes?: number;
+  gazeOffFrames?: number;
   onStrike?: (count: number) => void;
   onTerminate?: () => void;
 }
@@ -24,8 +24,8 @@ export function useGazeDetection({
   const strikesRef = useRef(0);
   const gazeOffRef = useRef(0);
   const faceMeshRef = useRef<any>(null);
-  const cameraRef = useRef<any>(null);
-  // Flag: only penalise AFTER camera has confirmed it's running
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
   const cameraRunningRef = useRef(false);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
@@ -40,20 +40,18 @@ export function useGazeDetection({
       const off = Math.abs(iris.x - (outer.x + inner.x) / 2);
       return 1 - off / (w * 0.5);
     }
-
     const vRatio = lt && lb
       ? 1 - Math.abs((li.y - lt.y) / Math.max(lb.y - lt.y, 0.01) - 0.5) * 2
       : 1;
-
-    return (hRatio(li,lo,lc) + hRatio(ri,ro,rc) + vRatio) / 3;
+    return (hRatio(li, lo, lc) + hRatio(ri, ro, rc) + vRatio) / 3;
   }, []);
 
   useEffect(() => {
     if (!enabled) return;
     let destroyed = false;
 
-    // Poll until the video element is actually mounted in the DOM
-    function waitForVideoRef(): Promise<HTMLVideoElement> {
+    // Wait until the <video> element is attached to the DOM
+    function waitForVideo(): Promise<HTMLVideoElement> {
       return new Promise((resolve) => {
         const check = () => {
           if (videoRef.current) return resolve(videoRef.current);
@@ -64,14 +62,11 @@ export function useGazeDetection({
     }
 
     async function init() {
-      // Wait for the <video> element to be in the DOM before touching it
-      const videoEl = await waitForVideoRef();
+      const videoEl = await waitForVideo();
       if (destroyed) return;
 
-      const [{ FaceMesh }, { Camera }] = await Promise.all([
-        import("@mediapipe/face_mesh"),
-        import("@mediapipe/camera_utils"),
-      ]);
+      // 1. Load FaceMesh — no Camera utility, use native getUserMedia instead
+      const { FaceMesh } = await import("@mediapipe/face_mesh");
       if (destroyed) return;
 
       const fm = new FaceMesh({
@@ -86,11 +81,10 @@ export function useGazeDetection({
       });
 
       fm.onResults((results: any) => {
-        // Don't penalise until the camera is confirmed running
         if (destroyed || !cameraRunningRef.current) return;
 
         if (!results.multiFaceLandmarks?.length) {
-          gazeOffRef.current += 2; // no face = penalise faster
+          gazeOffRef.current += 2;
         } else {
           const score = computeGazeScore(results.multiFaceLandmarks[0]);
           if (score < 0.40) gazeOffRef.current++;
@@ -115,25 +109,45 @@ export function useGazeDetection({
       faceMeshRef.current = fm;
       setStatus("calibrating");
 
+      // 2. Get camera stream via native browser API (no @mediapipe/camera_utils)
+      let stream: MediaStream;
       try {
-        const cam = new Camera(videoEl, {
-          onFrame: async () => {
-            if (videoRef.current) await fm.send({ image: videoRef.current });
-          },
-          width: 320, height: 240,
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 320, height: 240, facingMode: "user" },
+          audio: false,
         });
-        cameraRef.current = cam;
-        await cam.start();
-        if (!destroyed) {
-          cameraRunningRef.current = true;
-          setStatus("ok");
-        }
       } catch (err) {
-        // Camera permission denied or unavailable — silently disable proctoring.
-        // Do NOT penalise the student for a missing camera.
         console.warn("[GazeDetection] Camera unavailable, proctoring disabled:", err);
         if (!destroyed) setStatus("idle");
+        return;
       }
+
+      if (destroyed) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
+      // 3. Attach stream to the <video> element directly
+      streamRef.current = stream;
+      videoEl.srcObject = stream;
+      await videoEl.play().catch(() => {});
+
+      if (destroyed) return;
+
+      cameraRunningRef.current = true;
+      setStatus("ok");
+
+      // 4. Drive FaceMesh with a requestAnimationFrame loop (no Camera utility)
+      const sendFrame = async () => {
+        if (destroyed || !cameraRunningRef.current) return;
+        if (videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          try {
+            await fm.send({ image: videoEl });
+          } catch (_) {}
+        }
+        rafRef.current = requestAnimationFrame(sendFrame);
+      };
+      rafRef.current = requestAnimationFrame(sendFrame);
     }
 
     init().catch((err) => {
@@ -144,8 +158,10 @@ export function useGazeDetection({
     return () => {
       destroyed = true;
       cameraRunningRef.current = false;
-      cameraRef.current?.stop();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      streamRef.current?.getTracks().forEach(t => t.stop());
       faceMeshRef.current?.close();
+      if (videoRef.current) videoRef.current.srcObject = null;
       setStatus("idle");
     };
   }, [enabled, computeGazeScore, gazeOffFrames, maxStrikes, onStrike, onTerminate]);
