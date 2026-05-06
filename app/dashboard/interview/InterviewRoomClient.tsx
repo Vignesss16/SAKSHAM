@@ -591,7 +591,7 @@ export default function InterviewRoomClient() {
 
   return (
     <ErrorBoundary>
-      <AgoraRTCProvider client={clientRef.current}>
+      <AgoraRTCProvider client={clientRef.current as any}>
         <InterviewContent 
           agoraData={agoraData} 
           rtmClient={rtmClient} 
