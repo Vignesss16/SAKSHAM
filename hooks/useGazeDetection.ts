@@ -25,6 +25,8 @@ export function useGazeDetection({
   const gazeOffRef = useRef(0);
   const faceMeshRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
+  // Flag: only penalise AFTER camera has confirmed it's running
+  const cameraRunningRef = useRef(false);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
     const li = landmarks[468]; const lo = landmarks[33];  const lc = landmarks[133];
@@ -50,7 +52,22 @@ export function useGazeDetection({
     if (!enabled) return;
     let destroyed = false;
 
+    // Poll until the video element is actually mounted in the DOM
+    function waitForVideoRef(): Promise<HTMLVideoElement> {
+      return new Promise((resolve) => {
+        const check = () => {
+          if (videoRef.current) return resolve(videoRef.current);
+          if (!destroyed) setTimeout(check, 100);
+        };
+        check();
+      });
+    }
+
     async function init() {
+      // Wait for the <video> element to be in the DOM before touching it
+      const videoEl = await waitForVideoRef();
+      if (destroyed) return;
+
       const [{ FaceMesh }, { Camera }] = await Promise.all([
         import("@mediapipe/face_mesh"),
         import("@mediapipe/camera_utils"),
@@ -69,7 +86,9 @@ export function useGazeDetection({
       });
 
       fm.onResults((results: any) => {
-        if (destroyed) return;
+        // Don't penalise until the camera is confirmed running
+        if (destroyed || !cameraRunningRef.current) return;
+
         if (!results.multiFaceLandmarks?.length) {
           gazeOffRef.current += 2; // no face = penalise faster
         } else {
@@ -96,18 +115,35 @@ export function useGazeDetection({
       faceMeshRef.current = fm;
       setStatus("calibrating");
 
-      const cam = new Camera(videoRef.current!, {
-        onFrame: async () => { await fm.send({ image: videoRef.current! }); },
-        width: 320, height: 240,
-      });
-      cameraRef.current = cam;
-      await cam.start();
-      if (!destroyed) setStatus("ok");
+      try {
+        const cam = new Camera(videoEl, {
+          onFrame: async () => {
+            if (videoRef.current) await fm.send({ image: videoRef.current });
+          },
+          width: 320, height: 240,
+        });
+        cameraRef.current = cam;
+        await cam.start();
+        if (!destroyed) {
+          cameraRunningRef.current = true;
+          setStatus("ok");
+        }
+      } catch (err) {
+        // Camera permission denied or unavailable — silently disable proctoring.
+        // Do NOT penalise the student for a missing camera.
+        console.warn("[GazeDetection] Camera unavailable, proctoring disabled:", err);
+        if (!destroyed) setStatus("idle");
+      }
     }
 
-    init().catch(console.error);
+    init().catch((err) => {
+      console.warn("[GazeDetection] Init failed, proctoring disabled:", err);
+      setStatus("idle");
+    });
+
     return () => {
       destroyed = true;
+      cameraRunningRef.current = false;
       cameraRef.current?.stop();
       faceMeshRef.current?.close();
       setStatus("idle");
