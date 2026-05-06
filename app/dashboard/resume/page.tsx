@@ -301,18 +301,25 @@ export default function ResumePage() {
             </div>
 
             {/* Score cards row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#1a2123] rounded-xl p-6 border border-[#3c494e]/30 flex flex-col items-center text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#859399] mb-3">Overall Score</p>
-                <div className="w-24 h-24 rounded-full border-8 flex items-center justify-center mb-3"
-                  style={{ borderColor: analysis.score >= 80 ? '#00d1ff' : analysis.score >= 60 ? '#44e2cd' : '#ffb4ab' }}>
-                  <span className="font-['Plus_Jakarta_Sans'] text-4xl font-black">{analysis.score}</span>
-                </div>
-                <p className="text-xs text-[#bbc9cf]">{analysis.score >= 80 ? "Excellent!" : analysis.score >= 60 ? "Good, needs polish." : "Needs improvement."}</p>
-              </div>
+            <div className="grid grid-cols-1 gap-4">
               {analysis.ats_score !== undefined && (
                 <div className="bg-[#1a2123] rounded-xl p-6 border border-[#3c494e]/30 flex flex-col items-center text-center">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#859399] mb-3">ATS Score</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#859399]">ATS Score</p>
+                    <div className="group relative">
+                      <span className="material-symbols-outlined text-[16px] text-[#859399] cursor-help">info</span>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 p-4 bg-[#242b2e] border border-[#3c494e] rounded-xl text-xs text-[#bbc9cf] text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 shadow-2xl">
+                        <strong className="text-white block mb-1">How is this calculated?</strong>
+                        The ATS score evaluates how well your resume matches standard Applicant Tracking System parsers. It checks for:
+                        <ul className="list-disc pl-4 mt-2 space-y-1">
+                          <li>Standard section headings (Experience, Education)</li>
+                          <li>Machine-readable formatting (no complex tables or columns)</li>
+                          <li>Clear contact information parsing</li>
+                          <li>Appropriate professional keyword density</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                   <div className="w-24 h-24 rounded-full border-8 flex items-center justify-center mb-3"
                     style={{ borderColor: analysis.ats_score >= 70 ? '#03c6b2' : '#ffb4ab' }}>
                     <span className="font-['Plus_Jakarta_Sans'] text-4xl font-black">{analysis.ats_score}</span>
