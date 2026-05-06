@@ -116,10 +116,6 @@ export default function DashboardLayout({
     applyTheme(newTheme);
   };
 
-  // Interview room is fullscreen — no sidebar
-  if (pathname === "/dashboard/interview") {
-    return <>{children}</>;
-  }
 
   const isActive = (item: { href: string; exact?: boolean }) => {
     if (item.exact) return pathname === item.href;
@@ -188,6 +184,11 @@ export default function DashboardLayout({
       }
     }
   }, [isMentorFlow, pathname, router]);
+
+  // Interview room is fullscreen — no sidebar
+  if (pathname === "/dashboard/interview") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen bg-[var(--c-bg)]">
