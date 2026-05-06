@@ -28,28 +28,51 @@ export default function MentorSessionsPage() {
   );
 
   useEffect(() => {
-    async function fetchSessions() {
+    let channel: any;
+
+    async function setupSessions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
-      const { data, error } = await supabase
-        .from("mentor_bookings")
-        .select(`
-          id, scheduled_at, status, meeting_link, mentor_id, student_id,
-          mentor:mentor_id(profiles(full_name)),
-          student:student_id(full_name)
-        `)
-        .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
-        .order("scheduled_at", { ascending: true });
+      const fetchSessions = async () => {
+        const { data, error } = await supabase
+          .from("mentor_bookings")
+          .select(`
+            id, scheduled_at, status, meeting_link, mentor_id, student_id,
+            mentor:mentor_id(profiles(full_name)),
+            student:student_id(full_name)
+          `)
+          .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
+          .order("scheduled_at", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching sessions:", error);
-      }
-      if (data) setSessions(data as any);
-      setLoading(false);
+        if (error) console.error("Error fetching sessions:", error);
+        if (data) setSessions(data as any);
+        setLoading(false);
+      };
+
+      await fetchSessions();
+
+      // Realtime subscription for booking updates
+      channel = supabase
+        .channel('mentor_bookings_updates')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'mentor_bookings',
+          filter: `mentor_id=eq.${user.id}`
+        }, () => {
+          console.log("Bookings updated, refetching...");
+          fetchSessions();
+        })
+        .subscribe();
     }
-    fetchSessions();
+
+    setupSessions();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [supabase]);
 
   const getStatusColor = (status: string) => {
