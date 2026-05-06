@@ -380,15 +380,23 @@ export default function ResumePage() {
                           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="text-xs font-semibold text-[#859399] uppercase mb-2">Original</p>
-                              {sec.weak_bullets.map((b, j) => (
-                                <p key={j} className="text-xs text-[#bbc9cf] bg-[#93000a]/10 border border-[#ffb4ab]/20 rounded p-2 mb-1.5">{b}</p>
-                              ))}
+                              {sec.weak_bullets.length > 0 ? (
+                                sec.weak_bullets.map((b, j) => (
+                                  <p key={j} className="text-xs text-[#bbc9cf] bg-[#93000a]/10 border border-[#ffb4ab]/20 rounded p-2 mb-1.5">{b}</p>
+                                ))
+                              ) : (
+                                <p className="text-xs text-[#859399] italic bg-[#242b2e]/50 rounded p-2 border border-[#3c494e]/30">Section missing or content not found.</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-[#44e2cd] uppercase mb-2">Suggested</p>
-                              {sec.suggested_bullets.map((b, j) => (
-                                <p key={j} className="text-xs text-[#bbc9cf] bg-[#03c6b2]/5 border border-[#44e2cd]/20 rounded p-2 mb-1.5">{b}</p>
-                              ))}
+                              {sec.suggested_bullets.length > 0 ? (
+                                sec.suggested_bullets.map((b, j) => (
+                                  <p key={j} className="text-xs text-[#bbc9cf] bg-[#03c6b2]/5 border border-[#44e2cd]/20 rounded p-2 mb-1.5">{b}</p>
+                                ))
+                              ) : (
+                                <p className="text-xs text-[#859399] italic bg-[#242b2e]/50 rounded p-2 border border-[#3c494e]/30">No suggestions available.</p>
+                              )}
                             </div>
                           </div>
                         </div>
