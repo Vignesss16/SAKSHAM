@@ -337,9 +337,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           {/* Remote Video (Main) */}
           {remoteUsers.map((user) => (
             <div key={user.uid} className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
-              {user.videoTrack && (
-                <RemoteVideoTrack track={user.videoTrack} play={true} className="w-full h-full" />
-              )}
+              <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full" />
               <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest border border-white/10 z-10">
                 Partner
               </div>
