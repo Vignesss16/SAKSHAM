@@ -669,7 +669,7 @@ CRITICAL: Do NOT mention the JSON array or say "Here is a summary in JSON" in yo
                         &ldquo;{mentor.reason}&rdquo;
                       </p>
                       <Link 
-                        href={`/dashboard/mentors?id=${mentor.id}`} 
+                        href={`/dashboard/mentors/${mentor.id}`} 
                         className="inline-flex items-center gap-2 bg-[#00d1ff]/10 hover:bg-[#00d1ff] text-[#00d1ff] hover:text-[#001f28] px-4 py-2 rounded-lg text-xs font-bold transition-all border border-[#00d1ff]/20 active:scale-95"
                       >
                         Book Session <span className="material-symbols-outlined text-sm">event_available</span>

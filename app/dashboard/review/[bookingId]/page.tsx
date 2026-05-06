@@ -34,7 +34,11 @@ export default function ReviewPage() {
 
       const { data, error } = await supabase
         .from("mentor_bookings")
-        .select(`*, mentors(full_name), student:student_id(full_name)`)
+        .select(`
+          *, 
+          mentor:mentor_id(profiles(full_name)), 
+          student:student_id(full_name)
+        `)
         .eq("id", bookingId)
         .single();
 
@@ -110,7 +114,7 @@ export default function ReviewPage() {
       <div className="text-center mb-8">
         <span className="material-symbols-outlined text-6xl text-[var(--c-primary)] mb-4">rate_review</span>
         <h1 className="font-['Plus_Jakarta_Sans'] text-3xl font-black text-[var(--c-text)]">
-          How was your session?
+          Rate your session with {userRole === "student" ? booking?.mentor?.profiles?.full_name : booking?.student?.full_name}
         </h1>
         <p className="text-[var(--c-muted)] mt-2">
           Your feedback helps us maintain high quality standards on SAKSHAM.AI.

@@ -14,6 +14,7 @@ type Booking = {
   student: { full_name: string } | null;
   mentor_id: string;
   student_id: string;
+  mentor_reviews: { from_user_id: string }[];
 };
 
 export default function SessionsPage() {
@@ -41,7 +42,8 @@ export default function SessionsPage() {
           .select(`
             id, scheduled_at, status, meeting_link, mentor_id, student_id,
             mentor:mentor_id(profiles(full_name)),
-            student:student_id(full_name)
+            student:student_id(full_name),
+            mentor_reviews(from_user_id)
           `)
           .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
           .order("scheduled_at", { ascending: true });
@@ -168,9 +170,11 @@ export default function SessionsPage() {
                     ) : session.status === "completed" ? (
                       <Link 
                         href={`/dashboard/review/${session.id}`}
-                        className="btn-secondary py-2 px-6 text-sm"
+                        className={session.mentor_reviews.some(r => r.from_user_id === userId) 
+                          ? "btn-secondary py-2 px-6 text-sm opacity-70" 
+                          : "btn-primary py-2 px-6 text-sm bg-green-600 hover:bg-green-700"}
                       >
-                        View Review
+                        {session.mentor_reviews.some(r => r.from_user_id === userId) ? "Review Submitted" : "Leave Review"}
                       </Link>
                     ) : null}
                   </div>
