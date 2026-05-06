@@ -68,7 +68,7 @@ export default function NotificationBell() {
         .in("status", ["pending", "confirmed"]);
 
       if (bookings && bookings.length > 0) {
-        const bookingIds = bookings.map(b => b.id);
+        const bookingIds = bookings.map((b: any) => b.id);
         
         const chatChannel = supabase
           .channel('global_chat_notifications')
