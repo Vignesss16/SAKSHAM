@@ -31,10 +31,10 @@ export default function GazeProctor({ videoRef, strikes, maxStrikes, status }: P
       <div style={{ background: "#1a1a1a", border: `1px solid ${color}`,
                     borderRadius: 6, padding: "3px 8px", fontSize: 11,
                     color, fontWeight: 700, letterSpacing: "0.05em" }}>
-        {status === "calibrating" ? "CALIBRATING..." :
-         status === "ok"          ? `EYE TRACK: ${strikes}/${maxStrikes}` :
-         status === "warning"     ? `GAZE WARNING ${strikes}/${maxStrikes}` :
-         "PROCTORING OFF"}
+      {status === "calibrating" ? "CAMERA ON · LOADING..." :
+       status === "ok"          ? `EYE TRACK: ${strikes}/${maxStrikes}` :
+       status === "warning"     ? `⚠ GAZE WARNING ${strikes}/${maxStrikes}` :
+       "PROCTORING OFF"}
       </div>
     </div>
   );
