@@ -296,6 +296,16 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
       )}
 
       {/* Header */}
+      <style jsx global>{`
+        .agora_video_player video {
+          object-fit: contain !important;
+          background-color: #000 !important;
+        }
+        .agora_video_player {
+          background-color: #000 !important;
+        }
+      `}</style>
+
       <div className="bg-[#121212] p-4 flex items-center justify-between border-b border-[var(--c-border)] z-30">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-[#64dc64] animate-pulse"></div>
