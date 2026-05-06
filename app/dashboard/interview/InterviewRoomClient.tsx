@@ -47,7 +47,8 @@ import type {
   AgoraRenewalTokens,
 } from '@/types/conversation';
 import { getConversationIssueSeverity, type ConnectionIssue } from '@/components/ConversationErrorCard';
-import AgoraRTC from 'agora-rtc-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
+import AgoraRTM from 'agora-rtm';
 
 const MAX_CONNECTION_ISSUES = 6;
 
@@ -515,20 +516,13 @@ export default function InterviewRoomClient() {
   const [systemPrompt, setSystemPrompt] = useState('');
 
   // Agora Provider ref
-  const { default: agoraRTC } = require('agora-rtc-react');
-  const clientRef = useRef<ReturnType<typeof agoraRTC.createClient> | null>(null);
+  const clientRef = useRef<ReturnType<typeof AgoraRTC.createClient> | null>(null);
 
   useEffect(() => {
     async function start() {
       try {
         const prompt = localStorage.getItem('omnidimension_system_prompt') || "You are an AI interviewer.";
         setSystemPrompt(prompt);
-
-        // Preload
-        await Promise.all([
-          import('agora-rtc-react').catch(() => {}),
-          import('agora-rtm').catch(() => {})
-        ]);
 
         const randomUid = Math.floor(Math.random() * 1000000) + 1;
 
@@ -538,8 +532,6 @@ export default function InterviewRoomClient() {
         const responseData = await agoraResponse.json();
 
         // 2. Start Agent and setup RTM
-        const { default: AgoraRTM } = await import('agora-rtm');
-        
         const [agentData, rtm] = await Promise.all([
           fetch('/api/invite-agent', {
             method: 'POST',
@@ -567,7 +559,7 @@ export default function InterviewRoomClient() {
         setAgoraData({ ...responseData, agentId: agentData?.agent_id, uid: String(randomUid) });
 
         if (!clientRef.current) {
-          clientRef.current = agoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+          clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         }
       } catch (err: any) {
         setError(err.message || "Failed to start conversation");
@@ -596,8 +588,6 @@ export default function InterviewRoomClient() {
       </div>
     );
   }
-
-  const { AgoraRTCProvider } = require('agora-rtc-react');
 
   return (
     <ErrorBoundary>
