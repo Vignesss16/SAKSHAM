@@ -38,8 +38,21 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
         }, (payload) => {
           console.log("New message received via realtime:", payload.new);
           setMessages(prev => {
-            // Prevent duplicates if already added by local state (though we don't do that here)
+            // Prevent duplicates (already added by optimistic update)
             if (prev.find(m => m.id === payload.new.id)) return prev;
+            
+            // Check if this is the database confirmation of an optimistic message
+            const existingMatch = prev.find(m => 
+              m.content === payload.new.content && 
+              m.user_id === payload.new.user_id && 
+              m.id.toString().startsWith('temp-')
+            );
+
+            if (existingMatch) {
+              // Replace optimistic message with real one
+              return prev.map(m => m.id === existingMatch.id ? payload.new : m);
+            }
+
             return [...prev, payload.new];
           });
         })
@@ -63,16 +76,32 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentUser) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage("");
+
+    // Optimistic Update
+    const optimisticMsg = {
+      id: `temp-${Date.now()}`,
+      booking_id: bookingId,
+      user_id: currentUser,
+      content: messageText,
+      created_at: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
 
     const { error } = await supabase.from("session_messages").insert({
       booking_id: bookingId,
       user_id: currentUser,
-      content: newMessage.trim()
+      content: messageText
     });
 
-    if (error) console.error(error);
-    setNewMessage("");
+    if (error) {
+      console.error("Error sending message:", error);
+      // Revert optimistic update on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+    }
   };
 
   return (
