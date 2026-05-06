@@ -209,7 +209,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
             });
           }
         })
-        .subscribe(async (status) => {
+        .subscribe(async (status: any) => {
           if (status === 'SUBSCRIBED') {
             console.log("Presence subscribed in call room");
             await presenceChannel.track({
