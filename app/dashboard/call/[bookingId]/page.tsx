@@ -183,7 +183,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           const users = Object.values(newState).flat();
           setParticipants(users);
         })
-        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        .on('presence', { event: 'join' }, ({ key, newPresences }: any) => {
           const joinedUser = newPresences[0] as any;
           if (key !== user.id) {
             setToast({ 
@@ -200,7 +200,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
             }
           }
         })
-        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }: any) => {
           const leftUser = leftPresences[0] as any;
           if (key !== user.id) {
             setToast({ 

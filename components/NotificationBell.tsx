@@ -9,16 +9,26 @@ export default function NotificationBell() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const [activeToast, setActiveToast] = useState<any>(null);
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
   useEffect(() => {
+    if (activeToast) {
+      const timer = setTimeout(() => setActiveToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeToast]);
+
+  useEffect(() => {
     async function initNotifications() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch initial notifications
       const { data } = await supabase
         .from("notifications")
         .select("*")
@@ -31,9 +41,8 @@ export default function NotificationBell() {
         setUnreadCount(data.filter(n => !n.is_read).length);
       }
 
-      // Realtime subscription
-      console.log(`Subscribing to notifications for user: ${user.id}`);
-      const channel = supabase
+      // Realtime subscription for notifications
+      const notificationChannel = supabase
         .channel(`user_notifications:${user.id}`)
         .on('postgres_changes', { 
           event: 'INSERT', 
@@ -41,17 +50,51 @@ export default function NotificationBell() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         }, (payload) => {
-          console.log("New notification received via realtime:", payload.new);
+          console.log("New notification:", payload.new);
           setNotifications(prev => [payload.new, ...prev]);
           setUnreadCount(prev => prev + 1);
+          setActiveToast({ 
+            title: payload.new.title, 
+            content: payload.new.content, 
+            type: 'notification',
+            link: payload.new.link 
+          });
         })
-        .subscribe((status) => {
-          console.log(`Notification realtime status:`, status);
-        });
+        .subscribe();
+
+      // Realtime subscription for chat messages (Global)
+      // First find all active booking IDs for this user
+      const { data: bookings } = await supabase
+        .from("mentor_bookings")
+        .select("id")
+        .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
+        .in("status", ["pending", "confirmed"]);
+
+      if (bookings && bookings.length > 0) {
+        const bookingIds = bookings.map(b => b.id);
+        
+        const chatChannel = supabase
+          .channel('global_chat_notifications')
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'session_messages'
+          }, (payload) => {
+            // Only notify if the message belongs to one of our bookings AND is not from us
+            if (bookingIds.includes(payload.new.booking_id) && payload.new.user_id !== user.id) {
+              setActiveToast({
+                title: "New Message 💬",
+                content: payload.new.content,
+                type: 'chat',
+                link: '/dashboard/mentors/sessions' // General link
+              });
+            }
+          })
+          .subscribe();
+      }
 
       return () => {
-        console.log(`Unsubscribing from notifications for user: ${user.id}`);
-        supabase.removeChannel(channel);
+        supabase.removeAllChannels();
       };
     }
     initNotifications();
@@ -73,6 +116,38 @@ export default function NotificationBell() {
 
   return (
     <div className="relative">
+      {/* Global Toast Bar */}
+      {activeToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-top duration-500 w-[calc(100%-40px)] max-w-md">
+          <Link 
+            href={activeToast.link || "#"}
+            onClick={() => setActiveToast(null)}
+            className="block glass bg-[#1a1a1a]/95 border-2 border-[var(--c-primary)]/50 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] group hover:scale-[1.02] transition-all"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[var(--c-primary)]/20 flex items-center justify-center text-[var(--c-primary)] shrink-0">
+                <span className="material-symbols-outlined text-[28px]">
+                  {activeToast.type === 'chat' ? 'chat' : 'notifications_active'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-black text-white mb-0.5 flex items-center justify-between">
+                  {activeToast.title}
+                  <span className="text-[10px] text-[var(--c-primary)] font-bold uppercase tracking-widest bg-[var(--c-primary)]/10 px-2 py-0.5 rounded-full">New</span>
+                </div>
+                <p className="text-xs text-[var(--c-muted)] font-medium truncate leading-tight">{activeToast.content}</p>
+              </div>
+              <button 
+                onClick={(e) => { e.preventDefault(); setActiveToast(null); }}
+                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/40"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          </Link>
+        </div>
+      )}
+
       <button 
         onClick={() => {
           setShowDropdown(!showDropdown);
@@ -110,7 +185,7 @@ export default function NotificationBell() {
                   <div className="font-bold text-xs text-white mb-1">{n.title}</div>
                   <p className="text-[11px] text-[var(--c-muted)] leading-relaxed">{n.content}</p>
                   <div className="text-[9px] text-[var(--c-muted)] mt-2 opacity-60">
-                    {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(n.created_at))}
                   </div>
                 </Link>
               ))
