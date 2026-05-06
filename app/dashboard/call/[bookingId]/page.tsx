@@ -7,6 +7,7 @@ import AgoraRTC, {
   AgoraRTCProvider,
   LocalVideoTrack,
   RemoteUser,
+  RemoteVideoTrack,
   useJoin,
   useLocalCameraTrack,
   useLocalMicrophoneTrack,
