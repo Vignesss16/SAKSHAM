@@ -46,7 +46,7 @@ export default function NotificationBell() {
           schema: 'public', 
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
-        }, (payload) => {
+        }, (payload: any) => {
           console.log("New notification:", payload.new);
           setNotifications(prev => [payload.new, ...prev]);
           setUnreadCount(prev => prev + 1);
@@ -76,7 +76,7 @@ export default function NotificationBell() {
             event: 'INSERT',
             schema: 'public',
             table: 'session_messages'
-          }, (payload) => {
+          }, (payload: any) => {
             // Only notify if the message belongs to one of our bookings AND is not from us
             if (bookingIds.includes(payload.new.booking_id) && payload.new.user_id !== user.id) {
               setActiveToast({
