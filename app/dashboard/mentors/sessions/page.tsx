@@ -167,7 +167,7 @@ export default function SessionsPage() {
                         Pay & Join
                         <span className="material-symbols-outlined text-[18px]">payments</span>
                       </Link>
-                    ) : session.status === "completed" ? (
+                    ) : session.status === "completed" && !isMentor ? (
                       <Link 
                         href={`/dashboard/review/${session.id}`}
                         className={session.mentor_reviews.some(r => r.from_user_id === userId) 

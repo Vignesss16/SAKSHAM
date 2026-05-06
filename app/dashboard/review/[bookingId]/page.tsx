@@ -53,9 +53,12 @@ export default function ReviewPage() {
       if (user.id === data.student_id) {
         setUserRole("student");
       } else if (user.id === data.mentor_id) {
-        setUserRole("mentor");
+        // Mentors should not be reviewing students
+        router.push("/mentordashboard");
+        return;
       } else {
         router.push("/dashboard");
+        return;
       }
 
       setLoading(false);

@@ -102,6 +102,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'alert' } | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,6 +137,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
       // Fetch user profile for presence
       const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
+      setUserRole(profile?.role || 'student');
 
       // Fetch existing messages
       const { data: msgs } = await supabase
@@ -275,7 +277,11 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   };
 
   const endCall = async () => {
-    router.push(`/dashboard/review/${channelName}`);
+    if (userRole === 'student') {
+      router.push(`/dashboard/review/${channelName}`);
+    } else {
+      router.push(`/mentordashboard`);
+    }
   };
 
   return (
