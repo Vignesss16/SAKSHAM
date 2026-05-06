@@ -142,16 +142,9 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
       
       if (msgs) setMessages(msgs);
 
-      // Channel for both Presence and Postgres Changes
-      const channel = supabase.channel(`call_room:${channelName}`, {
-        config: {
-          presence: {
-            key: user.id,
-          },
-        },
-      });
-
-      channel
+      // Channel for Postgres Changes (Chat)
+      const chatChannel = supabase
+        .channel(`session_chat:${channelName}`)
         .on('postgres_changes', { 
           event: 'INSERT', 
           schema: 'public', 
@@ -161,11 +154,28 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           console.log("In-call message received:", payload.new);
           setMessages(prev => {
             if (prev.find(m => m.id === payload.new.id)) return prev;
+            // Also filter out optimistic messages if we implement them
+            if (prev.find(m => m.content === payload.new.content && m.user_id === payload.new.user_id && Date.now() - new Date(m.created_at).getTime() < 5000)) {
+               // Replace the optimistic message with the real one from DB
+               return prev.map(m => m.content === payload.new.content && m.user_id === payload.new.user_id ? payload.new : m);
+            }
             return [...prev, payload.new];
           });
         })
+        .subscribe();
+
+      // Channel for Presence
+      const presenceChannel = supabase.channel(`call_presence:${channelName}`, {
+        config: {
+          presence: {
+            key: user.id,
+          },
+        },
+      });
+
+      presenceChannel
         .on('presence', { event: 'sync' }, () => {
-          const newState = channel.presenceState();
+          const newState = presenceChannel.presenceState();
           console.log("Presence sync:", newState);
           const users = Object.values(newState).flat();
           setParticipants(users);
@@ -198,8 +208,8 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            console.log("Realtime subscribed in call room");
-            await channel.track({
+            console.log("Presence subscribed in call room");
+            await presenceChannel.track({
               id: user.id,
               full_name: profile?.full_name || user.email,
               role: profile?.role || 'student'
@@ -208,7 +218,8 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
         });
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(chatChannel);
+        supabase.removeChannel(presenceChannel);
       };
     }
     setupChatAndPresence();
@@ -216,16 +227,32 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentUser) return;
+    
+    const messageText = newMessage.trim();
+    setNewMessage("");
+
+    // Optimistically update UI
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      booking_id: channelName,
+      user_id: currentUser,
+      content: messageText,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
 
     const { error } = await supabase.from("session_messages").insert({
       booking_id: channelName,
       user_id: currentUser,
-      content: newMessage.trim()
+      content: messageText
     });
 
-    if (error) console.error(error);
-    setNewMessage("");
+    if (error) {
+      console.error(error);
+      // Optional: remove optimistic message if failed
+    }
   };
 
   const toggleMic = () => {
@@ -285,12 +312,12 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main Video Area */}
-        <div className="flex-1 relative bg-black overflow-hidden">
+        <div className="flex-1 relative bg-black overflow-hidden flex items-center justify-center">
           {/* Remote Video (Main) */}
           {remoteUsers.map((user) => (
-            <div key={user.uid} className="absolute inset-0 w-full h-full">
-              <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest border border-white/10">
+            <div key={user.uid} className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+              <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-contain" />
+              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest border border-white/10 z-10">
                 Partner
               </div>
             </div>
@@ -308,14 +335,14 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           {/* Local Video (PIP) */}
           <div className={`absolute bottom-6 ${showChat ? 'right-6' : 'right-6'} w-40 md:w-56 aspect-video rounded-xl overflow-hidden border-2 border-[var(--c-primary)] shadow-2xl z-20 transition-all duration-500 ease-out ${!cameraOn ? 'bg-[#1a1a1a]' : 'bg-black'}`}>
             {localCameraTrack && cameraOn ? (
-              <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
+              <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-contain bg-black" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-[var(--c-muted)] bg-[#1a1a1a]">
                 <span className="material-symbols-outlined text-2xl mb-1 opacity-20">person</span>
                 <span className="text-[8px] uppercase font-black tracking-widest opacity-40">Privacy Mode</span>
               </div>
             )}
-            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white text-[10px] font-bold flex items-center gap-1.5">
+            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white text-[10px] font-bold flex items-center gap-1.5 z-10">
               You {!micOn && <span className="material-symbols-outlined text-[12px] text-[#ffb4ab]">mic_off</span>}
             </div>
           </div>
