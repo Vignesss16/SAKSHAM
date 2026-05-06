@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import type { RTMClient } from 'agora-rtm';
-import { setParameter } from 'agora-rtc-sdk-ng/esm';
 import {
   AgoraRTCProvider,
   useRTCClient,
@@ -17,6 +16,8 @@ import {
   RemoteUser,
   UID,
 } from 'agora-rtc-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
+import AgoraRTM from 'agora-rtm';
 import {
   AgoraVoiceAI,
   AgoraVoiceAIEvents,
@@ -47,8 +48,6 @@ import type {
   AgoraRenewalTokens,
 } from '@/types/conversation';
 import { getConversationIssueSeverity, type ConnectionIssue } from '@/components/ConversationErrorCard';
-import AgoraRTC from 'agora-rtc-sdk-ng';
-import AgoraRTM from 'agora-rtm';
 
 const MAX_CONNECTION_ISSUES = 6;
 
@@ -119,7 +118,7 @@ function InterviewContent({
   useEffect(() => {
     if (!client) return;
     try {
-      setParameter('ENABLE_AUDIO_PTS', true);
+      (AgoraRTC as any).setParameter('ENABLE_AUDIO_PTS', true);
     } catch (error) {
       console.warn('Could not set ENABLE_AUDIO_PTS:', error);
     }
@@ -515,8 +514,8 @@ export default function InterviewRoomClient() {
   const [error, setError] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
 
-  // Agora Provider ref
-  const clientRef = useRef<ReturnType<typeof AgoraRTC.createClient> | null>(null);
+  // Initialize the Agora RTC client once
+  const client = useRTCClient(useMemo(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as any, []));
 
   useEffect(() => {
     async function start() {
@@ -524,7 +523,7 @@ export default function InterviewRoomClient() {
         const prompt = localStorage.getItem('omnidimension_system_prompt') || "You are an AI interviewer.";
         setSystemPrompt(prompt);
 
-        const randomUid = Math.floor(Math.random() * 1000000) + 1;
+        const randomUid = Math.floor(Math.random() * 65500) + 1;
 
         // 1. Fetch Agora Token
         const agoraResponse = await fetch(`/api/generate-agora-token?uid=${randomUid}`);
@@ -557,10 +556,6 @@ export default function InterviewRoomClient() {
 
         setRtmClient(rtm);
         setAgoraData({ ...responseData, agentId: agentData?.agent_id, uid: String(randomUid) });
-
-        if (!clientRef.current) {
-          clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-        }
       } catch (err: any) {
         setError(err.message || "Failed to start conversation");
       } finally {
@@ -581,7 +576,7 @@ export default function InterviewRoomClient() {
     );
   }
 
-  if (error || !agoraData || !rtmClient || !clientRef.current) {
+  if (error || !agoraData || !rtmClient || !client) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0e1417] text-white">
         <p className="text-red-400">Error: {error || "Failed to load"}</p>
@@ -591,7 +586,7 @@ export default function InterviewRoomClient() {
 
   return (
     <ErrorBoundary>
-      <AgoraRTCProvider client={clientRef.current as any}>
+      <AgoraRTCProvider client={client as any}>
         <InterviewContent 
           agoraData={agoraData} 
           rtmClient={rtmClient} 

@@ -108,7 +108,7 @@ export default function NotificationBell() {
       .eq("is_read", false);
     
     setUnreadCount(0);
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setNotifications(prev => prev.map((n: any) => ({ ...n, is_read: true })));
   };
 
   return (
@@ -173,7 +173,7 @@ export default function NotificationBell() {
                 No notifications yet
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n: any) => (
                 <Link 
                   key={n.id} 
                   href={n.link || "#"}
