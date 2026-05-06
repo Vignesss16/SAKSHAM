@@ -15,10 +15,13 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
   );
 
   useEffect(() => {
+    let channel: any;
+
     async function setupChat() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setCurrentUser(user.id);
 
+      // 1. Fetch initial messages
       const { data } = await supabase
         .from("session_messages")
         .select("*")
@@ -27,8 +30,9 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
       
       if (data) setMessages(data);
 
+      // 2. Setup Realtime
       console.log(`Subscribing to chat for booking: ${bookingId}`);
-      const channel = supabase
+      channel = supabase
         .channel(`drawer_chat:${bookingId}`)
         .on('postgres_changes', { 
           event: 'INSERT', 
@@ -38,10 +42,10 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
         }, (payload) => {
           console.log("New message received via realtime:", payload.new);
           setMessages(prev => {
-            // Prevent duplicates (already added by optimistic update)
+            // Prevent duplicates
             if (prev.find(m => m.id === payload.new.id)) return prev;
             
-            // Check if this is the database confirmation of an optimistic message
+            // Deduplicate optimistic messages
             const existingMatch = prev.find(m => 
               m.content === payload.new.content && 
               m.user_id === payload.new.user_id && 
@@ -49,7 +53,6 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
             );
 
             if (existingMatch) {
-              // Replace optimistic message with real one
               return prev.map(m => m.id === existingMatch.id ? payload.new : m);
             }
 
@@ -59,13 +62,16 @@ export default function SessionChatDrawer({ bookingId, onClose, otherPartyName }
         .subscribe((status) => {
           console.log(`Realtime status for booking ${bookingId}:`, status);
         });
+    }
 
-      return () => {
+    setupChat();
+
+    return () => {
+      if (channel) {
         console.log(`Unsubscribing from chat for booking: ${bookingId}`);
         supabase.removeChannel(channel);
-      };
-    }
-    setupChat();
+      }
+    };
   }, [bookingId, supabase]);
 
   useEffect(() => {

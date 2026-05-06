@@ -125,6 +125,9 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   }, [toast]);
 
   useEffect(() => {
+    let chatChannel: any;
+    let presenceChannel: any;
+
     async function setupChatAndPresence() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -143,7 +146,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
       if (msgs) setMessages(msgs);
 
       // Channel for Postgres Changes (Chat)
-      const chatChannel = supabase
+      chatChannel = supabase
         .channel(`session_chat:${channelName}`)
         .on('postgres_changes', { 
           event: 'INSERT', 
@@ -165,7 +168,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
         .subscribe();
 
       // Channel for Presence
-      const presenceChannel = supabase.channel(`call_presence:${channelName}`, {
+      presenceChannel = supabase.channel(`call_presence:${channelName}`, {
         config: {
           presence: {
             key: user.id,
@@ -216,13 +219,14 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
             });
           }
         });
-
-      return () => {
-        supabase.removeChannel(chatChannel);
-        supabase.removeChannel(presenceChannel);
-      };
     }
+    
     setupChatAndPresence();
+
+    return () => {
+      if (chatChannel) supabase.removeChannel(chatChannel);
+      if (presenceChannel) supabase.removeChannel(presenceChannel);
+    };
   }, [channelName, supabase]);
 
   const sendMessage = async (e: React.FormEvent) => {
