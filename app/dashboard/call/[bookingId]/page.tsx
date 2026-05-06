@@ -297,12 +297,18 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
       {/* Header */}
       <style jsx global>{`
-        .agora_video_player video {
+        video {
           object-fit: contain !important;
           background-color: #000 !important;
+          width: 100% !important;
+          height: 100% !important;
+          position: relative !important;
         }
         .agora_video_player {
           background-color: #000 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
       `}</style>
 
@@ -330,7 +336,9 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           {/* Remote Video (Main) */}
           {remoteUsers.map((user) => (
             <div key={user.uid} className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
-              <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-contain" />
+              {user.videoTrack && (
+                <RemoteVideoTrack track={user.videoTrack} play={true} className="w-full h-full" />
+              )}
               <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-[10px] uppercase font-bold tracking-widest border border-white/10 z-10">
                 Partner
               </div>
@@ -347,9 +355,9 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
           )}
 
           {/* Local Video (PIP) */}
-          <div className={`absolute bottom-6 ${showChat ? 'right-6' : 'right-6'} w-40 md:w-56 aspect-video rounded-xl overflow-hidden border-2 border-[var(--c-primary)] shadow-2xl z-20 transition-all duration-500 ease-out ${!cameraOn ? 'bg-[#1a1a1a]' : 'bg-black'}`}>
+          <div className={`absolute bottom-6 right-6 w-40 md:w-56 aspect-video rounded-xl overflow-hidden border-2 border-[var(--c-primary)] shadow-2xl z-20 transition-all duration-500 ease-out ${!cameraOn ? 'bg-[#1a1a1a]' : 'bg-black'} flex items-center justify-center`}>
             {localCameraTrack && cameraOn ? (
-              <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-contain bg-black" />
+              <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-[var(--c-muted)] bg-[#1a1a1a]">
                 <span className="material-symbols-outlined text-2xl mb-1 opacity-20">person</span>
