@@ -3,9 +3,9 @@ import {
   AgoraClient,
   Agent,
   Area,
-  DeepgramSTT,
+  OpenAISTT,
   ExpiresIn,
-  MiniMaxTTS,
+  OpenAITTS,
   OpenAI,
 } from 'agora-agent-server-sdk';
 import { DEFAULT_AGENT_UID } from '@/lib/agora';
@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
       parameters: { data_channel: 'datastream', enable_error_message: true },
     })
       .withStt(
-        new DeepgramSTT({
-          model: 'nova-3',
+        new OpenAISTT({
+          model: 'whisper-1',
           language: 'en',
         })
       )
@@ -89,9 +89,9 @@ export async function POST(request: NextRequest) {
         })
       )
       .withTts(
-        new MiniMaxTTS({
-          model: 'speech_2_6_turbo',
-          voiceId: 'English_captivating_female1',
+        new OpenAITTS({
+          model: 'tts-1',
+          voice: 'nova',
         })
       );
 
