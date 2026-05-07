@@ -5,11 +5,16 @@ import * as pdfjs from "pdfjs-dist";
 import Link from "next/link";
 import { Loader2, Globe, ShieldCheck, Zap } from "lucide-react";
 
-// Setup PDF worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Setup PDF worker moved inside the component to prevent SSR errors
+import { useEffect as useIsomorphicLayoutEffect } from "react";
 
 export default function OfflineResumePage() {
   const [loadingStatus, setLoadingStatus] = useState<string>("");
+  
+  useEffect(() => {
+    // This only runs on the client
+    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  }, []);
   const [progress, setProgress] = useState<number>(0);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isEngineReady, setIsEngineReady] = useState(false);
