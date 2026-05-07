@@ -5,7 +5,7 @@ export type GazeStatus = "idle" | "calibrating" | "ok" | "warning" | "terminated
 export type ExamMode = "strict" | "relaxed" | "standard";
 
 interface UseGazeDetectionOptions {
-  enabled: boolean; // This now controls AI ANALYSIS, not the camera itself
+  enabled: boolean;
   mode?: ExamMode;
   onViolation?: (score: number, message: string) => void;
   onTerminate?: () => void;
@@ -22,6 +22,7 @@ export function useGazeDetection({
   // Intelligence State
   const [suspicionScore, setSuspicionScore] = useState(0);
   const [status, setStatus] = useState<GazeStatus>("idle");
+  const [isCameraReady, setIsCameraReady] = useState(false);
   
   // Internal Tracking Refs
   const scoreRef = useRef(0);
@@ -35,7 +36,6 @@ export function useGazeDetection({
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const destroyedRef = useRef(false);
-  const cameraReadyRef = useRef(false);
 
   const weights = useMemo(() => ({
     gaze: mode === "relaxed" ? 0.4 : mode === "strict" ? 1.5 : 0.8,
@@ -78,32 +78,28 @@ export function useGazeDetection({
     }
   }, [onViolation, onTerminate]);
 
-  // PHASE 1: Camera Initialization (Runs on Mount)
+  // PHASE 1: Immediate Camera Init
   useEffect(() => {
     destroyedRef.current = false;
+    let stream: MediaStream | null = null;
     
     async function startCamera() {
-      // Small delay to ensure DOM is ready
-      await new Promise(r => setTimeout(r, 500));
       const videoEl = videoRef.current;
-      if (!videoEl || streamRef.current) return;
+      if (!videoEl) return;
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" },
           audio: false,
         });
         streamRef.current = stream;
         videoEl.srcObject = stream;
         
-        // Ensure video plays and stays playing
-        videoEl.onloadedmetadata = () => {
-          videoEl.play().catch(e => console.error("Video play failed", e));
-          cameraReadyRef.current = true;
-          setStatus("ok");
-        };
+        await videoEl.play().catch(e => console.error("Initial play failed", e));
+        setIsCameraReady(true);
+        setStatus("ok");
       } catch (e) {
-        console.error("Camera access failed", e);
+        console.error("Camera Init Error", e);
         setStatus("idle");
       }
     }
@@ -112,15 +108,16 @@ export function useGazeDetection({
 
     return () => {
       destroyedRef.current = true;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
       if (videoRef.current) videoRef.current.srcObject = null;
     };
   }, []);
 
-  // PHASE 2: AI Analysis (Starts when enabled=true)
+  // PHASE 2: AI Analysis (Starts when enabled=true AND camera is ready)
   useEffect(() => {
-    if (!enabled || !cameraReadyRef.current) return;
+    if (!enabled || !isCameraReady) return;
 
     async function startAnalysis() {
       const videoEl = videoRef.current;
@@ -173,7 +170,7 @@ export function useGazeDetection({
         };
         rafRef.current = requestAnimationFrame(sendFrame);
       } catch (e) {
-        console.error("AI Analysis failed to start", e);
+        console.error("AI Start Error", e);
       }
     }
 
@@ -186,7 +183,7 @@ export function useGazeDetection({
         faceMeshRef.current = null;
       }
     };
-  }, [enabled, weights, handleScoreUpdate, computeGazeScore]);
+  }, [enabled, isCameraReady, weights, handleScoreUpdate, computeGazeScore]);
 
   return { videoRef, suspicionScore, status };
 }
