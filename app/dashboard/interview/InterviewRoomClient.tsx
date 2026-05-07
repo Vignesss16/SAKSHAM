@@ -737,6 +737,8 @@ export default function InterviewRoomClient() {
     );
   }
 
+  const { AgoraRTCProvider } = require('agora-rtc-react');
+
   return (
     <div className="h-screen bg-[#0e1417]">
       {isGeneratingReport ? (
