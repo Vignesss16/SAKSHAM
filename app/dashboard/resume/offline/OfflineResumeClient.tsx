@@ -30,8 +30,14 @@ export default function OfflineResumeClient() {
         }
       });
       setIsEngineReady(true);
-    } catch (err) {
-      alert("WebGPU not supported or initialization failed.");
+    } catch (err: any) {
+      console.error("WebLLM Init Error:", err);
+      const isWebGPUSupported = "gpu" in navigator;
+      if (!isWebGPUSupported) {
+        alert("🚨 WebGPU is not supported on this browser.\n\nTo fix this for your demo:\n1. Use Google Chrome.\n2. Or enable it in Brave via chrome://flags/#enable-unsafe-webgpu");
+      } else {
+        alert("Initialization failed. Please ensure your hardware acceleration is turned on in browser settings.");
+      }
     } finally {
       setIsInitializing(false);
     }
