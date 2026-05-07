@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { Loader2, Play, CheckCircle2 } from 'lucide-react';
 import { useGazeDetection } from "@/hooks/useGazeDetection";
