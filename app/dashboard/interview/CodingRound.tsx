@@ -39,6 +39,7 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   const [showAvatar, setShowAvatar] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiAdvice, setAiAdvice] = useState<string>("");
+  const [isVisionLoading, setIsVisionLoading] = useState(false);
   const [lastVisionCheck, setLastVisionCheck] = useState(0);
   const editorRef = useRef<any>(null);
 
@@ -176,8 +177,9 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
 
   // Vision Helper: Capture screen and get AI advice
   const runVisionAnalysis = async () => {
-    if (!showAvatar || isAnalyzing || !started || failed) return;
+    if (!showAvatar || isVisionLoading || !started || failed) return;
     
+    setIsVisionLoading(true);
     try {
       // Capture a screenshot of the window/editor
       // Note: In a real app, we'd use getDisplayMedia, but for the hackathon
@@ -204,6 +206,8 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
       }
     } catch (err) {
       console.error("Vision Check Failed", err);
+    } finally {
+      setIsVisionLoading(false);
     }
   };
 
