@@ -126,12 +126,21 @@ export default function OfflineResumeClient() {
                 <p className="text-xs font-mono text-[#00d1ff]">{loadingStatus}</p>
               </div>
             ) : (
-              <button 
-                onClick={initEngine}
-                className="bg-[#00d1ff] text-[#001f28] px-10 py-4 rounded-xl font-black text-lg hover:scale-105 transition-all shadow-lg shadow-[#00d1ff]/20"
-              >
-                Initialize AI (WebGPU)
-              </button>
+              <div className="flex flex-col items-center gap-4">
+                <button 
+                  onClick={initEngine}
+                  className="bg-[#00d1ff] text-[#001f28] px-10 py-4 rounded-xl font-black text-lg hover:scale-105 transition-all shadow-lg shadow-[#00d1ff]/20"
+                >
+                  Initialize AI (WebGPU)
+                </button>
+                <div className="h-px w-20 bg-white/10 my-2" />
+                <Link 
+                  href="/dashboard/resume"
+                  className="text-sm font-bold text-[#859399] hover:text-[#00d1ff] transition-colors"
+                >
+                  Use Online Analyzer (Fallback)
+                </Link>
+              </div>
             )}
           </div>
         ) : (
