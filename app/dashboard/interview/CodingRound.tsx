@@ -52,31 +52,27 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
 
   const MAX_STRIKES = 3;
 
-  const { videoRef, strikes, status } = useGazeDetection({
+  const { videoRef, suspicionScore, status } = useGazeDetection({
     enabled: started && !failed,
-    maxStrikes: MAX_STRIKES,
-    onStrike: async (count) => {
-      if (count < MAX_STRIKES) {
-        setOutput(
-          `⚠️ Security Warning ${count}/${MAX_STRIKES}. ` +
-          `Please maintain focus on the assessment screen.`
-        );
-      }
+    mode: isTech ? "relaxed" : "standard",
+    onViolation: async (score, message) => {
+      setOutput(`⚠️ ${message}`);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from("proctoring_events").insert({
           user_id: user.id,
           session_type: "mock_interview",
-          strike_number: count,
-          terminated: count >= MAX_STRIKES,
+          suspicion_score: score,
+          event_type: "behavioral_deviation",
+          mode: isTech ? "relaxed" : "standard"
         });
       }
     },
     onTerminate: () => {
       setFailed(true);
       setTimeout(() => {
-        const submission = `// [Assessment terminated by proctoring system]\n${code}`;
+        const submission = `// [Assessment terminated: High suspicion threshold reached]\n${code}`;
         onComplete(submission, isTech ? language : 'strategic');
       }, 3000);
     },
@@ -281,7 +277,12 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
 
   return (
     <div className="relative h-full flex flex-col w-full">
-      <GazeProctor videoRef={videoRef} strikes={strikes} maxStrikes={MAX_STRIKES} status={status} />
+      <GazeProctor
+        videoRef={videoRef}
+        suspicionScore={suspicionScore}
+        status={status}
+        mode={isTech ? "relaxed" : "standard"}
+      />
 
       {/* Proctoring Overlay */}
       {!started && !failed && (

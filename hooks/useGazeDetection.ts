@@ -2,33 +2,47 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 export type GazeStatus = "idle" | "calibrating" | "ok" | "warning" | "terminated";
+export type ExamMode = "strict" | "relaxed" | "standard";
 
 interface UseGazeDetectionOptions {
   enabled: boolean;
-  maxStrikes?: number;
-  gazeOffFrames?: number;
-  onStrike?: (count: number) => void;
+  mode?: ExamMode;
+  onViolation?: (score: number, message: string) => void;
   onTerminate?: () => void;
 }
 
 export function useGazeDetection({
   enabled,
-  maxStrikes = 3,
-  gazeOffFrames = 45,
-  onStrike,
+  mode = "standard",
+  onViolation,
   onTerminate,
 }: UseGazeDetectionOptions) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [strikes, setStrikes] = useState(0);
+  
+  // Intelligence State
+  const [suspicionScore, setSuspicionScore] = useState(0);
   const [status, setStatus] = useState<GazeStatus>("idle");
-  const strikesRef = useRef(0);
-  const gazeOffRef = useRef(0);
-  // Use refs so the rAF loop always reads the latest value (never stale closures)
+  
+  // Internal Tracking Refs
+  const scoreRef = useRef(0);
+  const gazeOffFramesRef = useRef(0);
+  const faceMissingFramesRef = useRef(0);
+  const lastViolationTimeRef = useRef(0);
+  const lastGraceWindowRef = useRef(0);
+  
+  // MediaPipe Refs
   const faceMeshRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const destroyedRef = useRef(false);
   const cameraRunningRef = useRef(false);
+
+  // Behavior Weights based on Mode
+  const weights = {
+    gaze: mode === "relaxed" ? 0.4 : mode === "strict" ? 1.5 : 0.8,
+    faceMissing: mode === "strict" ? 2.5 : 1.5,
+    decay: 0.5, // How fast the score drops when behavior is normal
+  };
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
     const li = landmarks[468]; const lo = landmarks[33]; const lc = landmarks[133];
@@ -40,72 +54,62 @@ export function useGazeDetection({
       if (w < 0.01) return 1;
       return 1 - Math.abs(iris.x - (outer.x + inner.x) / 2) / (w * 0.5);
     }
-    const vRatio =
-      lt && lb ? 1 - Math.abs((li.y - lt.y) / Math.max(lb.y - lt.y, 0.01) - 0.5) * 2 : 1;
+    const vRatio = lt && lb ? 1 - Math.abs((li.y - lt.y) / Math.max(lb.y - lt.y, 0.01) - 0.5) * 2 : 1;
     return (hRatio(li, lo, lc) + hRatio(ri, ro, rc) + vRatio) / 3;
   }, []);
 
-  useEffect(() => {
-    if (!enabled) return;
-
-    // Reset destroyed flag for this mount
-    destroyedRef.current = false;
-
-    function waitForVideo(): Promise<HTMLVideoElement> {
-      return new Promise((resolve) => {
-        const check = () => {
-          if (videoRef.current) return resolve(videoRef.current);
-          if (!destroyedRef.current) setTimeout(check, 100);
-        };
-        check();
-      });
+  const handleScoreUpdate = useCallback((delta: number) => {
+    const now = Date.now();
+    // Cooldown logic: don't update if in grace window (first 3s of a look-away)
+    if (delta > 0 && now - lastGraceWindowRef.current < 3000 && lastGraceWindowRef.current !== 0) {
+      return;
     }
 
-    async function init() {
-      const videoEl = await waitForVideo();
-      if (destroyedRef.current) return;
+    scoreRef.current = Math.min(100, Math.max(0, scoreRef.current + delta));
+    setSuspicionScore(Math.floor(scoreRef.current));
 
-      // ── 1. Get camera FIRST so user sees live feed immediately ───────────────
-      let stream: MediaStream;
+    if (scoreRef.current >= 85) {
+      setStatus("terminated");
+      onTerminate?.();
+    } else if (scoreRef.current >= 40) {
+      // Only warn every 10 seconds to prevent alert fatigue
+      if (now - lastViolationTimeRef.current > 10000) {
+        setStatus("warning");
+        onViolation?.(scoreRef.current, "Suspicious behavior pattern detected. Please stay focused.");
+        lastViolationTimeRef.current = now;
+        setTimeout(() => { if (!destroyedRef.current) setStatus("ok"); }, 5000);
+      }
+    }
+  }, [onViolation, onTerminate]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    destroyedRef.current = false;
+
+    async function init() {
+      const videoEl = videoRef.current;
+      if (!videoEl) return;
+
+      // 1. Init Camera
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" },
           audio: false,
         });
-      } catch {
-        if (!destroyedRef.current) setStatus("idle");
+        streamRef.current = stream;
+        videoEl.srcObject = stream;
+        await videoEl.play();
+      } catch (e) {
+        setStatus("idle");
         return;
       }
-      if (destroyedRef.current) { stream.getTracks().forEach((t) => t.stop()); return; }
-
-      streamRef.current = stream;
-      videoEl.srcObject = stream;
-      videoEl.muted = true;
-      videoEl.playsInline = true;
-      await videoEl.play().catch(() => {});
-      if (destroyedRef.current) return;
 
       setStatus("calibrating");
 
-      // ── 2. Load FaceMesh WASM (with 45s timeout) ─────────────────────────────
-      let FaceMeshClass: any;
-      try {
-        const mod = await Promise.race<any>([
-          import("@mediapipe/face_mesh"),
-          new Promise<never>((_, rej) =>
-            setTimeout(() => rej(new Error("timeout")), 45000)
-          ),
-        ]);
-        FaceMeshClass = mod.FaceMesh;
-      } catch {
-        if (!destroyedRef.current) setStatus("idle");
-        return;
-      }
-      if (destroyedRef.current) return;
-
-      const fm = new FaceMeshClass({
-        locateFile: (f: string) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
+      // 2. Load MediaPipe
+      const mod = await import("@mediapipe/face_mesh");
+      const fm = new mod.FaceMesh({
+        locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
       });
       fm.setOptions({
         maxNumFaces: 1,
@@ -115,117 +119,59 @@ export function useGazeDetection({
       });
 
       fm.onResults((results: any) => {
-        // CRITICAL: check destroyedRef AND faceMeshRef before ANY access
-        if (destroyedRef.current || !faceMeshRef.current || !cameraRunningRef.current) return;
+        if (destroyedRef.current || !faceMeshRef.current) return;
 
         if (!results.multiFaceLandmarks?.length) {
-          gazeOffRef.current += 2;
-        } else {
-          const score = computeGazeScore(results.multiFaceLandmarks[0]);
-          
-          // Smart Detection: If score is low (looking down), but user is in "Solving" mode, be more lenient
-          const isLookingDown = score < 0.4;
-          
-          if (isLookingDown) {
-            // If they are looking down, we increment slower if they are "solving"
-            // This is a placeholder for external "isSolving" state integration
-            gazeOffRef.current += 0.5; 
-          } else {
-            gazeOffRef.current = Math.max(0, gazeOffRef.current - 1);
+          faceMissingFramesRef.current++;
+          if (faceMissingFramesRef.current > 30) { // ~1s
+            handleScoreUpdate(weights.faceMissing);
           }
-        }
+        } else {
+          faceMissingFramesRef.current = 0;
+          const score = computeGazeScore(results.multiFaceLandmarks[0]);
+          const isLookingAway = score < 0.45;
 
-        if (gazeOffRef.current >= gazeOffFrames) {
-          gazeOffRef.current = 0;
-          strikesRef.current += 1;
-          setStrikes(strikesRef.current);
-          onStrike?.(strikesRef.current);
-          if (strikesRef.current >= maxStrikes) {
-            setStatus("terminated");
-            onTerminate?.();
+          if (isLookingAway) {
+            if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
+            gazeOffFramesRef.current++;
+            
+            // Continuous deviation logic
+            if (gazeOffFramesRef.current > 60) { // ~2s
+               handleScoreUpdate(weights.gaze);
+            }
           } else {
-            setStatus("warning");
-            setTimeout(() => { if (!destroyedRef.current) setStatus("ok"); }, 4000);
+            // Behavioral decay: score drops when user is focused
+            lastGraceWindowRef.current = 0;
+            gazeOffFramesRef.current = 0;
+            handleScoreUpdate(-weights.decay);
           }
         }
       });
 
-      // Warm up WASM before storing the ref
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1; canvas.height = 1;
-        await fm.send({ image: canvas });
-      } catch { /* ignore warmup errors */ }
-
-      if (destroyedRef.current) {
-        // Already unmounted during warmup — close immediately and exit
-        try { fm.close(); } catch { /* ignore */ }
-        return;
-      }
-
-      // Store ref AFTER warmup succeeds and we know we're still mounted
       faceMeshRef.current = fm;
       cameraRunningRef.current = true;
       setStatus("ok");
 
-      // ── 3. rAF loop — always checks destroyedRef & faceMeshRef ──────────────
       const sendFrame = async () => {
-        // Hard stop: if destroyed or faceMesh nulled, exit immediately
-        if (destroyedRef.current || !faceMeshRef.current || !cameraRunningRef.current) return;
-
-        if (videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-          try {
-            // Check again inside try because async gap between checks
-            if (faceMeshRef.current) {
-              await faceMeshRef.current.send({ image: videoEl });
-            }
-          } catch { /* swallow send errors */ }
+        if (destroyedRef.current || !faceMeshRef.current) return;
+        if (videoEl.readyState >= 2) {
+          await faceMeshRef.current.send({ image: videoEl });
         }
-
-        // Only reschedule if still alive
-        if (!destroyedRef.current) {
-          rafRef.current = requestAnimationFrame(sendFrame);
-        }
+        rafRef.current = requestAnimationFrame(sendFrame);
       };
       rafRef.current = requestAnimationFrame(sendFrame);
     }
 
-    init().catch(() => {
-      if (!destroyedRef.current) setStatus("idle");
-    });
+    init();
 
-    // ── Cleanup — order matters: stop rAF → null FaceMesh → close → stop camera ─
     return () => {
       destroyedRef.current = true;
-      cameraRunningRef.current = false;
-
-      // 1. Stop the rAF loop first (prevents any further fm.send calls)
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-
-      // 2. Null out the faceMeshRef BEFORE calling close()
-      //    so any in-flight onResults callback sees null and bails out
-      const fmToClose = faceMeshRef.current;
-      faceMeshRef.current = null;
-
-      // 3. Close FaceMesh safely
-      if (fmToClose) {
-        try { fmToClose.close(); } catch { /* ignore */ }
-      }
-
-      // 4. Stop camera tracks
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-
-      // 5. Detach stream from video element
-      if (videoRef.current) videoRef.current.srcObject = null;
-
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (faceMeshRef.current) faceMeshRef.current.close();
+      streamRef.current?.getTracks().forEach(t => t.stop());
       setStatus("idle");
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled]);
+  }, [enabled, weights.gaze, weights.faceMissing, weights.decay, handleScoreUpdate, computeGazeScore]);
 
-  return { videoRef, strikes, status };
+  return { videoRef, suspicionScore, status };
 }
