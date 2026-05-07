@@ -80,11 +80,14 @@ export default function OfflineResumeClient() {
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-              <Zap className="text-[#00d1ff] fill-[#00d1ff]/20" size={32} />
-              Edge Intelligence
-            </h1>
-            <p className="text-[#859399] mt-2">Zero-Latency, Private Offline Resume Analysis</p>
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
+                <Zap className="text-[#00d1ff] fill-[#00d1ff]/20" size={32} />
+                Edge Intelligence
+              </h1>
+              <span className="bg-[#ffb4ab] text-[#690005] text-[10px] font-black px-2 py-0.5 rounded-md uppercase">Beta / WIP</span>
+            </div>
+            <p className="text-[#859399] mt-2">Zero-Latency, Private Offline Resume Analysis (Experimental)</p>
           </div>
           <Link href="/dashboard/resume" className="text-sm font-bold text-[#859399] hover:text-white transition-colors">
             Back to Online →

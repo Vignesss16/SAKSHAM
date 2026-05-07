@@ -182,7 +182,10 @@ export default function ResumePage() {
               <span className="material-symbols-outlined font-black">bolt</span>
             </div>
             <div>
-              <p className="text-xs font-black text-[#00d1ff] uppercase tracking-widest leading-none mb-1">New Feature</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs font-black text-[#00d1ff] uppercase tracking-widest leading-none">New Feature</p>
+                <span className="bg-[#ffb4ab] text-[#690005] text-[8px] font-black px-1 py-0.5 rounded uppercase">Beta / WIP</span>
+              </div>
               <p className="text-sm font-bold text-white leading-none">Try Offline Analysis</p>
             </div>
             <span className="material-symbols-outlined text-[#00d1ff] ml-2 text-[20px]">arrow_forward</span>
