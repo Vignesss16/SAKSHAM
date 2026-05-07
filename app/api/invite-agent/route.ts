@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           end_of_speech: {
             mode: 'vad',
             vad_config: {
-              silence_duration_ms: 480,
+              silence_duration_ms: 1000,
             },
           },
         },

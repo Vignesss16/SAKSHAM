@@ -534,18 +534,24 @@ function InterviewContent({
               )}
             </div>
 
-            <div className="p-4 bg-[#121212] border-t border-[#242424]">
-              <div className="flex items-center gap-2 text-xs text-[#859399]">
-                <span className="material-symbols-outlined text-[14px]">info</span>
-                <span>Transcribed text is used for final scoring analysis.</span>
+            {/* Evaluation Info Box */}
+            <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-[#161d1f] to-[#0a1114] border border-[#242b2e] shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-[#00d1ff]/10">
+                  <span className="material-symbols-outlined text-[#00d1ff] text-xl">info</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#dde3e7] mb-1 uppercase tracking-wider">Evaluation Active</h4>
+                  <p className="text-xs text-[#859399] leading-relaxed">
+                    Your responses are being transcribed in real-time for final scoring and ATS-compatibility analysis.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
       </main>
       )}
-
-      {/* Background ambient */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#00d1ff]/5 blur-[120px] rounded-full"></div>
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#03c6b2]/5 blur-[100px] rounded-full"></div>
