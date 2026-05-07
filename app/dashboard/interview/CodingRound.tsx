@@ -28,13 +28,14 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   const [output, setOutput] = useState('');
   
   // Sequence state
-  const [questionIndex, setQuestionIndex] = useState(0); // 0 = Easy, 1 = Medium
   const [allSubmissions, setAllSubmissions] = useState<string[]>([]);
+  const [started, setStarted] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const MAX_STRIKES = 3;
 
   const { videoRef, strikes, status } = useGazeDetection({
-    enabled: true,  // CodingRound only mounts when the coding session is active
+    enabled: started && !failed,
     maxStrikes: MAX_STRIKES,
     onStrike: async (count) => {
       if (count < MAX_STRIKES) {
@@ -55,11 +56,36 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
       }
     },
     onTerminate: () => {
-      // Submit whatever code exists and move on
-      const submission = `// [Session terminated by anti-cheat]\n${code}`;
-      onComplete(submission, language);
+      setFailed(true);
+      // Wait a moment so user can see the failure message before auto-submitting
+      setTimeout(() => {
+        const submission = `// [Session terminated by anti-cheat]\n${code}`;
+        onComplete(submission, language);
+      }, 3000);
     },
   });
+
+  // Tab switching protection
+  useEffect(() => {
+    if (!started || failed) return;
+    
+    const handleViolation = () => {
+      setFailed(true);
+      const submission = `// [Session terminated: Tab switched or Window blurred]\n${code}`;
+      setTimeout(() => onComplete(submission, language), 3000);
+    };
+
+    const handleVisibilityChange = () => { if (document.hidden) handleViolation(); };
+    const handleBlur = () => handleViolation();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [started, failed, code, language, onComplete]);
 
   const fetchQuestion = async (difficultyOverride: string) => {
     setIsLoading(true);
@@ -165,6 +191,50 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
         maxStrikes={MAX_STRIKES}
         status={status}
       />
+
+      {/* Strict Anti-Cheat Rules Overlay */}
+      {!started && !failed && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#121a1e] border border-[#f59e0b]/30 p-10 rounded-2xl max-w-xl w-full text-center shadow-2xl">
+            <span className="material-symbols-outlined text-6xl text-[#f59e0b] mb-4">security</span>
+            <h2 className="font-['Plus_Jakarta_Sans'] text-2xl font-black text-white mb-4">Coding Round Anti-Cheat</h2>
+            <div className="text-[#bbc9cf] text-sm leading-relaxed mb-8 text-left space-y-4">
+              <p>To ensure interview integrity, the following rules are strictly enforced:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-white">Tab switching or minimizing</strong> the window will result in immediate termination of the coding round.</li>
+                <li><strong className="text-white">Eye Tracking:</strong> Your gaze must stay on the screen. Looking away repeatedly will trigger strikes.</li>
+                <li>On the 3rd strike, the session will be auto-submitted and closed.</li>
+              </ul>
+              <p className="text-xs text-[#859399] italic">Webcam processing happens locally. No video data is recorded.</p>
+            </div>
+            <button 
+              onClick={() => setStarted(true)} 
+              className="w-full bg-[#00d1ff] text-[#001f28] py-4 rounded-xl font-bold text-lg hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(0,209,255,0.2)]"
+            >
+              Understand & Start Coding
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Failure Overlay */}
+      {failed && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-lg p-4">
+          <div className="bg-[#121a1e] border border-[#f43f5e]/30 p-10 rounded-2xl max-w-md w-full text-center shadow-2xl shadow-[#f43f5e]/10">
+            <span className="material-symbols-outlined text-6xl text-[#f43f5e] mb-4">report_problem</span>
+            <h2 className="font-['Plus_Jakarta_Sans'] text-2xl font-black text-white mb-2">Session Terminated</h2>
+            <p className="text-[#bbc9cf] mb-8 leading-relaxed">
+              The anti-cheat system detected a violation (tab switch or excessive gaze deviation). 
+              Your current progress is being submitted and the interview will continue.
+            </p>
+            <div className="flex items-center justify-center gap-3 text-[#f43f5e] font-bold animate-pulse">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Moving to report generation...
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
         {/* Left: Problem Description */}
       <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
