@@ -42,6 +42,14 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   const [isVisionLoading, setIsVisionLoading] = useState(false);
   const [lastVisionCheck, setLastVisionCheck] = useState(0);
   const editorRef = useRef<any>(null);
+  const [isTech, setIsTech] = useState(false);
+
+  useEffect(() => {
+    const storedVars = localStorage.getItem('omnidimension_variables');
+    if (storedVars?.toLowerCase().includes('engineer')) {
+      setIsTech(true);
+    }
+  }, []);
 
   const MAX_STRIKES = 3;
 
@@ -257,7 +265,6 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   }, [started, failed, showAvatar, code, lastVisionCheck]);
 
   if (isLoading) {
-    const isTech = localStorage.getItem('omnidimension_variables')?.toLowerCase().includes('engineer') || false;
     return (
       <div className="flex-1 flex items-center justify-center h-[calc(100vh-64px-40px)]">
         <div className="flex flex-col items-center gap-4">
