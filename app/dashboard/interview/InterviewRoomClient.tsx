@@ -196,9 +196,9 @@ function InterviewContent({
     if (isCodingRound || codingRoundPending) return;
 
     // Trigger phrases from the AI agent (Closing statements)
-    const agentTriggerRegex = /(moving on to|concludes this part|time for|proceed to|start|next round|let's move to).{0,20}(coding|program|programming)/i;
+    const agentTriggerRegex = /(moving on to|concludes this part|time for|proceed to|start|next round|let's move to).{0,150}(coding|program|programming)/i;
     // Trigger phrases from the USER (Skip commands)
-    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let's|can we).{0,30}(coding|program|next round|coding round|coding room)/i;
+    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let's|can we).{0,100}(coding|program|next round|coding round|coding room)/i;
 
     // Combine all messages (completed + in-progress)
     const allMessages = [...messageList];
@@ -206,17 +206,16 @@ function InterviewContent({
 
     if (allMessages.length === 0) return;
 
-    // Look for ANY message matching the triggers
+    // Look for ANY message matching the triggers (UID agnostic for maximum reliability)
     const hasTrigger = allMessages.some(msg => {
       const text = msg.text.toLowerCase();
-      const isAgent = String(msg.uid) === String(agentUID);
       
-      if (isAgent && agentTriggerRegex.test(text)) {
-        console.log('🎯 Match found in Agent message:', text);
+      if (agentTriggerRegex.test(text)) {
+        console.log('🎯 Match found (Agent/System):', text);
         return true;
       }
-      if (!isAgent && userTriggerRegex.test(text)) {
-        console.log('🗣️ Match found in User message:', text);
+      if (userTriggerRegex.test(text)) {
+        console.log('🗣️ Match found (User):', text);
         return true;
       }
       return false;
