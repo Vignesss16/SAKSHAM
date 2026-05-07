@@ -339,8 +339,12 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
 
         <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-8 flex flex-col gap-6 flex-1 shadow-sm overflow-hidden flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00d1ff]">code</span>
-            <span className="text-sm text-[#859399] uppercase tracking-widest font-bold">Coding Round - Question {questionIndex + 1}/2</span>
+            <span className="material-symbols-outlined text-[#00d1ff]">
+              {question.languageSnippets.javascript.includes('solve') ? 'code' : 'assignment'}
+            </span>
+            <span className="text-sm text-[#859399] uppercase tracking-widest font-bold">
+              {question.languageSnippets.javascript.includes('solve') ? 'Coding Round' : 'Strategic Challenge'} - Question {questionIndex + 1}/2
+            </span>
           </div>
           
           <div className="flex-1 overflow-y-auto pr-2">
