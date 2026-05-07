@@ -193,23 +193,29 @@ function InterviewContent({
   }, [transcript]);
 
   useEffect(() => {
-    // Trigger phrases from the AI agent
-    const agentTriggerRegex = /moving on to the next round.*?coding|which is the coding round|concludes this part|let.{0,10}move (to|towards|on to) the coding round|we.{0,10}proceed to the coding/i;
-    // Trigger phrases from the USER (e.g. for demos)
-    const userTriggerRegex = /let.{0,10}move (to|towards|on to) the coding round|skip to (the )?coding|proceed to (the )?coding round/i;
+    // Trigger phrases from the AI agent (Magic phrases that close the session)
+    const agentTriggerRegex = /moving on to the next round.*?coding|which is the coding round|concludes this part|starting the coding round|time for the coding|proceed to the coding/i;
+    // Trigger phrases from the USER (Common ways to ask for the skip)
+    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let|let's).{0,20}(coding|program|next round|coding round|coding room)/i;
 
-    const agentTriggered = messageList.some(
-      (msg) => String(msg.uid) === agentUID && agentTriggerRegex.test(msg.text)
-    );
-    const userTriggered = messageList.some(
-      (msg) => String(msg.uid) !== agentUID && userTriggerRegex.test(msg.text)
-    );
+    const lastAgentMsg = [...messageList].reverse().find(msg => String(msg.uid) === agentUID);
+    const lastUserMsg = [...messageList].reverse().find(msg => String(msg.uid) !== agentUID);
+
+    const agentTriggered = lastAgentMsg && agentTriggerRegex.test(lastAgentMsg.text);
+    const userTriggered = lastUserMsg && userTriggerRegex.test(lastUserMsg.text);
+
+    if (userTriggered) {
+      console.log('🗣️ User requested coding round transition:', lastUserMsg?.text);
+    }
+    if (agentTriggered) {
+      console.log('🤖 Agent announced coding round transition:', lastAgentMsg?.text);
+    }
 
     if ((agentTriggered || userTriggered) && !isCodingRound && !codingRoundPending) {
-      console.log('🎯 Coding Round transition triggered. Waiting 3s for AI to finish speaking...');
+      console.log('🎯 Transitioning to Coding Round. Waiting 3s for audio to settle...');
       setCodingRoundPending(true);
 
-      // Give the agent 3 seconds to finish its announcement speech before switching
+      // Give the agent 3 seconds to finish its current/next sentence before switching
       setTimeout(() => {
         setIsCodingRound(true);
         setCodingRoundPending(false);
