@@ -28,6 +28,7 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   const [output, setOutput] = useState('');
   
   // Sequence state
+  const [questionIndex, setQuestionIndex] = useState(0); // 0 = Easy, 1 = Medium
   const [allSubmissions, setAllSubmissions] = useState<string[]>([]);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
