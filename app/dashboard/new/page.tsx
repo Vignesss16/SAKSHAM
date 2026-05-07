@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 const personas = [
   { emoji: '🤖', name: 'Technical Sam', desc: 'Rigorous, detail-oriented', color: 'var(--c-primary)', activeColor: 'rgba(0,209,255,0.05)' },
   { emoji: '👩‍💼', name: 'HR Jordan', desc: 'Friendly, culture-focused', color: 'var(--c-secondary)', activeColor: 'rgba(68,226,205,0.05)' },
+  { emoji: '🤝', name: 'Sales Alex', desc: 'Aggressive, target-driven', color: '#ffb4ab', activeColor: 'rgba(255,180,171,0.05)' },
   { emoji: '💼', name: 'Senior Morgan', desc: 'Strategic, tough follow-ups', color: 'var(--c-tertiary)', activeColor: 'rgba(236,211,255,0.05)' },
 ]
 
@@ -70,9 +71,10 @@ export default function NewInterviewPage() {
                 <label style={{ fontSize: 12, color: 'var(--c-muted)', marginBottom: 6, display: 'block' }}>Interview Type</label>
                 <select name="interviewType" className="field">
                   <option>Technical (DSA + System Design)</option>
-                  <option>Behavioral (STAR Method)</option>
+                  <option>Sales (B2B / B2C / SPIN Selling)</option>
                   <option>HR / Culture Fit</option>
-                  <option>Full Loop (All types)</option>
+                  <option>Product Management (Case Rounds)</option>
+                  <option>Behavioral (STAR Method)</option>
                 </select>
               </div>
               <div>
@@ -103,7 +105,7 @@ export default function NewInterviewPage() {
           {/* AI Persona */}
           <div className="glass" style={{ padding: 28 }}>
             <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16, fontWeight: 700, margin: '0 0 16px', color: 'var(--c-text)' }}>AI Interviewer Persona</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
               {personas.map((p, i) => (
                 <div
                   key={i}
