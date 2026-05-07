@@ -193,30 +193,41 @@ function InterviewContent({
   }, [transcript]);
 
   useEffect(() => {
-    // Trigger phrases from the AI agent (Magic phrases that close the session)
-    const agentTriggerRegex = /moving on to the next round.*?coding|which is the coding round|concludes this part|starting the coding round|time for the coding|proceed to the coding/i;
-    // Trigger phrases from the USER (Common ways to ask for the skip)
-    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let|let's).{0,20}(coding|program|next round|coding round|coding room)/i;
+    if (isCodingRound || codingRoundPending) return;
 
-    const lastAgentMsg = [...messageList].reverse().find(msg => String(msg.uid) === agentUID);
-    const lastUserMsg = [...messageList].reverse().find(msg => String(msg.uid) !== agentUID);
+    // Trigger phrases from the AI agent (Closing statements)
+    const agentTriggerRegex = /(moving on to|concludes this part|time for|proceed to|start|next round|let's move to).{0,20}(coding|program|programming)/i;
+    // Trigger phrases from the USER (Skip commands)
+    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let's|can we).{0,30}(coding|program|next round|coding round|coding room)/i;
 
-    const agentTriggered = lastAgentMsg && agentTriggerRegex.test(lastAgentMsg.text);
-    const userTriggered = lastUserMsg && userTriggerRegex.test(lastUserMsg.text);
+    // Combine all messages (completed + in-progress)
+    const allMessages = [...messageList];
+    if (currentInProgressMessage) allMessages.push(currentInProgressMessage);
 
-    if (userTriggered) {
-      console.log('🗣️ User requested coding round transition:', lastUserMsg?.text);
-    }
-    if (agentTriggered) {
-      console.log('🤖 Agent announced coding round transition:', lastAgentMsg?.text);
-    }
+    if (allMessages.length === 0) return;
 
-    if ((agentTriggered || userTriggered) && !isCodingRound && !codingRoundPending) {
-      console.log('🎯 Transitioning to Coding Round. Waiting 3s for audio to settle...');
+    // Look for ANY message matching the triggers
+    const hasTrigger = allMessages.some(msg => {
+      const text = msg.text.toLowerCase();
+      const isAgent = String(msg.uid) === String(agentUID);
+      
+      if (isAgent && agentTriggerRegex.test(text)) {
+        console.log('🎯 Match found in Agent message:', text);
+        return true;
+      }
+      if (!isAgent && userTriggerRegex.test(text)) {
+        console.log('🗣️ Match found in User message:', text);
+        return true;
+      }
+      return false;
+    });
+
+    if (hasTrigger) {
+      console.log('✅ Coding Round Transition Triggered!');
       setCodingRoundPending(true);
 
-      // Give the agent 3 seconds to finish its current/next sentence before switching
-      setTimeout(() => {
+      // Transition after 2.5 seconds (slightly faster than before)
+      const timer = setTimeout(() => {
         setIsCodingRound(true);
         setCodingRoundPending(false);
 
@@ -228,9 +239,11 @@ function InterviewContent({
           }).catch(console.error);
         }
         rtmClient?.logout().catch(console.error);
-      }, 3000);
+      }, 2500);
+
+      return () => clearTimeout(timer);
     }
-  }, [messageList, agentUID, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
+  }, [messageList, currentInProgressMessage, agentUID, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
 
   usePublish([localMicrophoneTrack]);
 
