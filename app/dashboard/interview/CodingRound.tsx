@@ -100,10 +100,10 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
 
   const fetchQuestion = async (difficultyOverride: string) => {
     setIsLoading(true);
-    try {
-      const storedVars = localStorage.getItem('omnidimension_variables');
-      const variables = storedVars ? JSON.parse(storedVars) : {};
+    const storedVars = localStorage.getItem('omnidimension_variables');
+    const variables = storedVars ? JSON.parse(storedVars) : {};
 
+    try {
       const res = await fetch('/api/generate-coding-question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
