@@ -56,10 +56,12 @@ function InterviewContent({
   agoraData,
   rtmClient,
   systemPrompt,
+  onTransition,
 }: {
   agoraData: AgoraTokenData;
   rtmClient: RTMClient;
   systemPrompt: string;
+  onTransition: (transcript: any[]) => void;
 }) {
   const router = useRouter();
   const [seconds, setSeconds] = useState(0);
@@ -216,7 +218,7 @@ function InterviewContent({
     }
   }, [messageList, currentInProgressMessage, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
 
-  const handleTriggerTransition = () => {
+  const handleTriggerTransitionInternal = () => {
     if (isCodingRound || codingRoundPending) return;
     
     console.log('🎯 Transition Triggered!');
@@ -224,9 +226,9 @@ function InterviewContent({
 
     // Transition after 1.5 seconds
     const timer = setTimeout(() => {
-      setIsCodingRound(true);
-      setCodingRoundPending(false);
-
+      // Pass the collected transcript back to parent for the report
+      onTransition(messageList);
+      
       if (agoraData?.agentId) {
         fetch('/api/stop-conversation', {
           method: 'POST',
@@ -402,7 +404,7 @@ function InterviewContent({
             {/* Manual Fallback Button */}
             <div className="flex flex-col items-center gap-4 py-4">
               <button
-                onClick={handleTriggerTransition}
+                onClick={handleTriggerTransitionInternal}
                 disabled={codingRoundPending}
                 className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-[#121a1e] border border-[#00d1ff]/20 text-[#00d1ff] hover:bg-[#00d1ff] hover:text-[#001f28] transition-all duration-300 font-bold shadow-lg shadow-[#00d1ff]/5"
               >
@@ -490,8 +492,7 @@ function InterviewContent({
                   if (!isCodingRound && !codingRoundPending) {
                     setCodingRoundPending(true);
                     setTimeout(() => {
-                      setIsCodingRound(true);
-                      setCodingRoundPending(false);
+                      onTransition(messageList);
                       if (agoraData?.agentId) {
                         fetch('/api/stop-conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agoraData.agentId }) }).catch(console.error);
                       }
@@ -590,6 +591,45 @@ export default function InterviewRoomClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
+  const router = useRouter();
+
+  // Round State
+  const [isCodingRound, setIsCodingRound] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [finalTranscript, setFinalTranscript] = useState<any[]>([]);
+
+  const handleTransitionToCoding = (transcript: any[]) => {
+    setFinalTranscript(transcript);
+    setIsCodingRound(true);
+  };
+
+  const handleCodingRoundComplete = async (code: string, language: string) => {
+    setIsGeneratingReport(true);
+    try {
+      const storedVars = localStorage.getItem('omnidimension_variables');
+      const variables = storedVars ? JSON.parse(storedVars) : {};
+
+      const res = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          language,
+          transcript: finalTranscript,
+          variables
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to generate report');
+      const data = await res.json();
+      
+      router.push(`/dashboard/reports?id=${data.id}`);
+    } catch (err) {
+      console.error(err);
+      alert('There was an error generating the report.');
+      setIsGeneratingReport(false);
+    }
+  };
 
   // Agora Provider ref
   const { default: agoraRTC } = require('agora-rtc-react');
@@ -697,17 +737,29 @@ export default function InterviewRoomClient() {
     );
   }
 
-  const { AgoraRTCProvider } = require('agora-rtc-react');
-
   return (
-    <ErrorBoundary>
-      <AgoraRTCProvider client={clientRef.current as any}>
-        <InterviewContent 
-          agoraData={agoraData} 
-          rtmClient={rtmClient} 
-          systemPrompt={systemPrompt}
-        />
-      </AgoraRTCProvider>
-    </ErrorBoundary>
+    <div className="h-screen bg-[#0e1417]">
+      {isGeneratingReport ? (
+        <div className="flex-1 flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4 text-white">
+            <Loader2 className="w-8 h-8 animate-spin text-[#00d1ff]" />
+            <p className="text-[#859399]">Analyzing your interview performance and generating comprehensive report...</p>
+          </div>
+        </div>
+      ) : isCodingRound ? (
+        <CodingRound onComplete={handleCodingRoundComplete} />
+      ) : (
+        <ErrorBoundary>
+          <AgoraRTCProvider client={clientRef.current as any}>
+            <InterviewContent 
+              agoraData={agoraData} 
+              rtmClient={rtmClient} 
+              systemPrompt={systemPrompt}
+              onTransition={handleTransitionToCoding}
+            />
+          </AgoraRTCProvider>
+        </ErrorBoundary>
+      )}
+    </div>
   );
 }
