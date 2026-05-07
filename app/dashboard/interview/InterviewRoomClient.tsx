@@ -224,7 +224,7 @@ function InterviewContent({
     console.log('🎯 Transition Triggered!');
     setCodingRoundPending(true);
 
-    // Transition after 2.5 seconds
+    // Transition after 1.5 seconds
     const timer = setTimeout(() => {
       setIsCodingRound(true);
       setCodingRoundPending(false);
