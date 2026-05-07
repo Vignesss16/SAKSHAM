@@ -196,9 +196,9 @@ function InterviewContent({
     if (isCodingRound || codingRoundPending) return;
 
     // Trigger phrases from the AI agent (Closing statements)
-    const agentTriggerRegex = /(moving on to|concludes this part|time for|proceed to|start|next round|let's move to).{0,150}(coding|program|programming)/i;
+    const agentTriggerRegex = /(moving on to|concludes this part|time for|proceed to|next round|let's move to).{0,150}(round|phase|challenge|coding|program|programming)/i;
     // Trigger phrases from the USER (Skip commands)
-    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let's|can we).{0,100}(coding|program|next round|coding round|coding room)/i;
+    const userTriggerRegex = /(move|switch|go|proceed|skip|start|let's|can we).{0,100}(next|round|challenge|coding|program|next round|coding round|coding room)/i;
 
     // Combine all messages (completed + in-progress)
     const allMessages = [...messageList];
@@ -407,8 +407,10 @@ function InterviewContent({
                 disabled={codingRoundPending}
                 className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-[#121a1e] border border-[#00d1ff]/20 text-[#00d1ff] hover:bg-[#00d1ff] hover:text-[#001f28] transition-all duration-300 font-bold shadow-lg shadow-[#00d1ff]/5"
               >
-                <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">code</span>
-                Move to Coding Round
+                <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">
+                  {systemPrompt.toLowerCase().includes('sales') || systemPrompt.toLowerCase().includes('hr') ? 'assignment' : 'code'}
+                </span>
+                {systemPrompt.toLowerCase().includes('sales') || systemPrompt.toLowerCase().includes('hr') ? 'Move to Strategic Challenge' : 'Move to Coding Round'}
               </button>
               <p className="text-[10px] text-[#4a5559] uppercase tracking-[0.2em]">Manual Fallback</p>
             </div>
@@ -484,25 +486,27 @@ function InterviewContent({
 
           {/* Manual coding round trigger for demos */}
           {!codingRoundPending && (
-            <button
-              onClick={() => {
-                if (!isCodingRound && !codingRoundPending) {
-                  setCodingRoundPending(true);
-                  setTimeout(() => {
-                    setIsCodingRound(true);
-                    setCodingRoundPending(false);
-                    if (agoraData?.agentId) {
-                      fetch('/api/stop-conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agoraData.agentId }) }).catch(console.error);
-                    }
-                    rtmClient?.logout().catch(console.error);
-                  }, 1500);
-                }
-              }}
-              className="px-4 py-2 rounded-xl border border-[#00d1ff]/30 bg-[#00d1ff]/10 text-[#00d1ff] text-xs font-bold uppercase tracking-widest hover:bg-[#00d1ff]/20 transition-all flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-sm">code</span>
-              Move to Coding Round
-            </button>
+              <button
+                onClick={() => {
+                  if (!isCodingRound && !codingRoundPending) {
+                    setCodingRoundPending(true);
+                    setTimeout(() => {
+                      setIsCodingRound(true);
+                      setCodingRoundPending(false);
+                      if (agoraData?.agentId) {
+                        fetch('/api/stop-conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agoraData.agentId }) }).catch(console.error);
+                      }
+                      rtmClient?.logout().catch(console.error);
+                    }, 1500);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl border border-[#00d1ff]/30 bg-[#00d1ff]/10 text-[#00d1ff] text-xs font-bold uppercase tracking-widest hover:bg-[#00d1ff]/20 transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {systemPrompt.toLowerCase().includes('sales') || systemPrompt.toLowerCase().includes('hr') ? 'assignment' : 'code'}
+                </span>
+                {systemPrompt.toLowerCase().includes('sales') || systemPrompt.toLowerCase().includes('hr') ? 'Move to Strategic Challenge' : 'Move to Coding Round'}
+              </button>
           )}
           {codingRoundPending && (
             <div className="px-4 py-2 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] text-xs font-bold uppercase tracking-widest flex items-center gap-2 animate-pulse">
