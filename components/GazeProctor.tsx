@@ -19,15 +19,15 @@ export default function GazeProctor({ videoRef, suspicionScore, status, mode = "
     status === "calibrating" ? "#03c6b2" : "#6b7280";
 
   return (
-    <div className="fixed top-20 right-8 z-[60] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="fixed top-6 right-6 z-[100] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
       
       {/* Smart Webcam Frame */}
       <div className="relative group">
         <video
           ref={videoRef}
           autoPlay muted playsInline
-          className={`w-32 h-24 rounded-2xl object-cover transition-all duration-500 border-2 shadow-2xl ${isWarning ? 'border-[#f43f5e] shadow-[#f43f5e]/20' : 'border-white/10 group-hover:border-[#00d1ff]/50'}`}
-          style={{ transform: 'scaleX(-1)' }} // Mirror the camera for natural feel
+          className={`w-32 h-24 rounded-2xl object-cover transition-all duration-500 border-2 shadow-2xl ${isWarning ? 'border-[#f43f5e] shadow-[#f43f5e]/20' : 'border-[#00d1ff]/30 shadow-[#00d1ff]/10'}`}
+          style={{ transform: 'scaleX(-1)' }}
         />
         <div className={`absolute inset-0 rounded-2xl transition-opacity duration-500 ${isWarning ? 'bg-[#f43f5e]/10 opacity-100' : 'opacity-0'}`} />
         

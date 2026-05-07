@@ -98,29 +98,26 @@ export function useGazeDetection({
       }
 
       try {
+        console.log("Hardware: Requesting Camera...");
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 320, height: 240, facingMode: "user" },
+          video: true, // Most basic request for maximum compatibility
           audio: false,
         });
         
+        console.log("Camera Stream Acquired:", stream.id);
         streamRef.current = stream;
         videoEl.srcObject = stream;
         videoEl.muted = true;
         videoEl.setAttribute("playsinline", "true");
         
-        // Force play immediately
-        const playPromise = videoEl.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error("Autoplay prevented:", error);
-            // Retry play on interaction if needed, but muted should work
-          });
-        }
+        // Force hardware light and playback
+        await videoEl.play();
+        console.log("Video Playback Started Successfully");
 
         setIsCameraReady(true);
         setStatus("ok");
       } catch (e) {
-        console.error("Camera Hardware Error", e);
+        console.error("CRITICAL CAMERA ERROR:", e);
         setStatus("idle");
       }
     }
