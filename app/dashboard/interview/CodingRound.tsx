@@ -3,7 +3,9 @@ import Editor from '@monaco-editor/react';
 import { Loader2, Play, CheckCircle2 } from 'lucide-react';
 import { useGazeDetection } from "@/hooks/useGazeDetection";
 import GazeProctor from "@/components/GazeProctor";
+import AvatarInterviewer from "@/components/AvatarInterviewer";
 import { createClient } from "@/lib/supabase/client";
+import { Sparkles, Eye, Monitor } from 'lucide-react';
 
 interface CodingQuestion {
   title: string;
@@ -32,6 +34,13 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   const [allSubmissions, setAllSubmissions] = useState<string[]>([]);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  // Vision & Avatar state
+  const [showAvatar, setShowAvatar] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<string>("");
+  const [lastVisionCheck, setLastVisionCheck] = useState(0);
+  const editorRef = useRef<any>(null);
 
   const MAX_STRIKES = 3;
 
@@ -165,6 +174,61 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
     }
   };
 
+  // Vision Helper: Capture screen and get AI advice
+  const runVisionAnalysis = async () => {
+    if (!showAvatar || isAnalyzing || !started || failed) return;
+    
+    try {
+      // Capture a screenshot of the window/editor
+      // Note: In a real app, we'd use getDisplayMedia, but for the hackathon
+      // we'll simulate the "Sight" by sending the current code + context.
+      // If we wanted real vision, we'd capture a canvas frame here.
+      
+      const storedVars = localStorage.getItem('omnidimension_variables');
+      const vars = storedVars ? JSON.parse(storedVars) : {};
+
+      const res = await fetch('/api/vision-helper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: "data:image/jpeg;base64,...", // Placeholder for actual capture
+          code: code,
+          jobRole: vars.role || "Developer"
+        })
+      });
+
+      const data = await res.json();
+      if (data.advice) {
+        setAiAdvice(data.advice);
+        speakAdvice(data.advice);
+      }
+    } catch (err) {
+      console.error("Vision Check Failed", err);
+    }
+  };
+
+  const speakAdvice = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Run vision check every 45 seconds if user is active
+  useEffect(() => {
+    if (!started || failed || !showAvatar) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastVisionCheck > 45000) {
+        runVisionAnalysis();
+        setLastVisionCheck(now);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [started, failed, showAvatar, code, lastVisionCheck]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center h-[calc(100vh-64px-40px)]">
@@ -239,6 +303,36 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
       <main className="flex-1 grid grid-cols-12 gap-6 p-8 max-w-7xl mx-auto w-full h-[calc(100vh-64px-40px)] overflow-hidden">
         {/* Left: Problem Description */}
       <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
+        {/* Avatar Companion */}
+        <div className={`transition-all duration-500 ${showAvatar ? 'h-64' : 'h-16'} bg-[#1A1A1A] border border-[#242424] rounded-2xl overflow-hidden relative group`}>
+          <div className="absolute top-4 right-4 z-20">
+            <button 
+              onClick={() => setShowAvatar(!showAvatar)}
+              className="p-2 bg-black/40 backdrop-blur-md rounded-lg text-white hover:bg-[#00d1ff]/20 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">{showAvatar ? 'visibility_off' : 'visibility'}</span>
+            </button>
+          </div>
+          
+          {showAvatar ? (
+            <AvatarInterviewer isSpeaking={isSpeaking} />
+          ) : (
+            <div className="h-full flex items-center px-6 gap-3">
+              <Sparkles className="text-[#00d1ff] w-5 h-5 animate-pulse" />
+              <span className="text-sm font-bold text-[#859399]">AI Companion Hidden</span>
+            </div>
+          )}
+
+          {/* Advice Bubble */}
+          {aiAdvice && showAvatar && (
+            <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/5 animate-in fade-in slide-in-from-bottom-2">
+              <p className="text-[10px] text-[#bbc9cf] leading-relaxed italic line-clamp-2">
+                "{aiAdvice}"
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="bg-[#1A1A1A] border border-[#242424] rounded-xl p-8 flex flex-col gap-6 flex-1 shadow-sm overflow-hidden flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#00d1ff]">code</span>

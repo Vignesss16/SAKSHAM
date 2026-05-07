@@ -171,9 +171,22 @@ export default function ResumePage() {
       )}
 
       <div className="max-w-7xl mx-auto p-8 space-y-8">
-        <div className="flex flex-col gap-2">
-          <h2 className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-[#dde3e7] tracking-tight">AI Resume Analyzer</h2>
-          <p className="text-[#bbc9cf] text-base max-w-2xl">Upload your resume and our AI will score it, identify weak sections, and give you actionable improvements.</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-[#dde3e7] tracking-tight">AI Resume Analyzer</h2>
+            <p className="text-[#bbc9cf] text-base max-w-2xl">Upload your resume and our AI will score it, identify weak sections, and give you actionable improvements.</p>
+          </div>
+          <Link href="/dashboard/resume/offline" className="group relative overflow-hidden flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#00d1ff]/10 to-[#03c6b2]/10 border border-[#00d1ff]/30 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[#00d1ff]/5">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00d1ff]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <div className="w-10 h-10 bg-[#00d1ff]/20 rounded-xl flex items-center justify-center text-[#00d1ff]">
+              <span className="material-symbols-outlined font-black">bolt</span>
+            </div>
+            <div>
+              <p className="text-xs font-black text-[#00d1ff] uppercase tracking-widest leading-none mb-1">New Feature</p>
+              <p className="text-sm font-bold text-white leading-none">Try Offline Analysis</p>
+            </div>
+            <span className="material-symbols-outlined text-[#00d1ff] ml-2 text-[20px]">arrow_forward</span>
+          </Link>
         </div>
 
         {/* Tabs */}

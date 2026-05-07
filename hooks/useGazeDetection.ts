@@ -122,8 +122,17 @@ export function useGazeDetection({
           gazeOffRef.current += 2;
         } else {
           const score = computeGazeScore(results.multiFaceLandmarks[0]);
-          if (score < 0.4) gazeOffRef.current++;
-          else gazeOffRef.current = Math.max(0, gazeOffRef.current - 1);
+          
+          // Smart Detection: If score is low (looking down), but user is in "Solving" mode, be more lenient
+          const isLookingDown = score < 0.4;
+          
+          if (isLookingDown) {
+            // If they are looking down, we increment slower if they are "solving"
+            // This is a placeholder for external "isSolving" state integration
+            gazeOffRef.current += 0.5; 
+          } else {
+            gazeOffRef.current = Math.max(0, gazeOffRef.current - 1);
+          }
         }
 
         if (gazeOffRef.current >= gazeOffFrames) {
