@@ -206,26 +206,19 @@ function InterviewContent({
 
     if (allMessages.length === 0) return;
 
-    // Look for ANY message matching the triggers (UID agnostic for maximum reliability)
-    const hasTrigger = allMessages.some(msg => {
-      const text = msg.text.toLowerCase();
-      
-      if (agentTriggerRegex.test(text)) {
-        console.log('🎯 Match found (Agent/System):', text);
-        return true;
-      }
-      if (userTriggerRegex.test(text)) {
-        console.log('🗣️ Match found (User):', text);
-        return true;
-      }
-      return false;
-    });
+    // To handle cases where the trigger phrase is split across multiple transcription chunks,
+    // we join the last 3 messages into a single text block for testing.
+    const recentText = allMessages.slice(-3).map(m => m.text).join(' ').toLowerCase();
 
-    if (hasTrigger) {
-      console.log('✅ Coding Round Transition Triggered!');
+    // Look for ANY match in the recent history
+    const agentTriggered = agentTriggerRegex.test(recentText);
+    const userTriggered = userTriggerRegex.test(recentText);
+
+    if (agentTriggered || userTriggered) {
+      console.log('✅ Match found in recent history:', recentText);
       setCodingRoundPending(true);
 
-      // Transition after 2.5 seconds (slightly faster than before)
+      // Transition after 2.5 seconds
       const timer = setTimeout(() => {
         setIsCodingRound(true);
         setCodingRoundPending(false);
