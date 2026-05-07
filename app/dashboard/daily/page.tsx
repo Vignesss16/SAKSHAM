@@ -126,23 +126,19 @@ export default function DailyChallengePage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const MAX_STRIKES = 3;
-
-  const { videoRef, strikes, status } = useGazeDetection({
+  const { videoRef, suspicionScore, status } = useGazeDetection({
     enabled: started && !failed && completedSteps.length < 3,
-    maxStrikes: MAX_STRIKES,
-    onStrike: async (count) => {
-      if (count < MAX_STRIKES) {
-        console.warn(`Gaze strike ${count}/${MAX_STRIKES}`);
-      }
+    mode: "relaxed", // DSA/Daily is always relaxed to allow thinking
+    onViolation: async (score, message) => {
+      console.warn(`Proctoring event: ${message} (Score: ${score})`);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from("proctoring_events").insert({
           user_id: user.id,
           session_type: "daily",
-          strike_number: count,
-          terminated: count >= MAX_STRIKES,
+          suspicion_score: score,
+          event_type: "behavioral_deviation"
         });
       }
     },
@@ -393,9 +389,9 @@ export default function DailyChallengePage() {
         )}
         <GazeProctor
           videoRef={videoRef}
-          strikes={strikes}
-          maxStrikes={MAX_STRIKES}
+          suspicionScore={suspicionScore}
           status={status}
+          mode="relaxed"
         />
       </header>
 
@@ -424,8 +420,8 @@ export default function DailyChallengePage() {
                 <p className="mb-2">Once you click start:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li><strong className="text-white">You cannot switch tabs or minimize the window.</strong></li>
-                  <li>Your webcam will be activated for eye-tracking. No video is recorded or stored.</li>
-                  <li>Looking away from the screen repeatedly will trigger a warning and eventually fail the challenge.</li>
+                  <li>Your webcam will be activated for intelligence proctoring.</li>
+                  <li>Our AI uses behavioral analysis to ensure a fair assessment for everyone.</li>
                 </ul>
               </div>
               <button onClick={() => setStarted(true)} className="btn-primary text-xl px-12 py-4 w-full justify-center rounded-xl shadow-[0_0_40px_rgba(0,209,255,0.2)] hover:scale-105 transition-transform">Start Challenge Now</button>
@@ -438,7 +434,7 @@ export default function DailyChallengePage() {
             <div className="bg-[#121a1e] border border-[#f43f5e]/30 p-8 rounded-2xl text-center max-w-md w-full shadow-2xl shadow-[#f43f5e]/10">
               <span className="material-symbols-outlined text-6xl text-[#f43f5e] mb-4">cancel</span>
               <h2 className="font-['Plus_Jakarta_Sans'] text-2xl font-black text-white mb-2">Challenge Failed</h2>
-              <p className="text-[#bbc9cf] mb-6">You either ran out of time, switched tabs, or triggered the eye-tracking anti-cheat system by looking away from the screen too many times.</p>
+              <p className="text-[#bbc9cf] mb-6">You either ran out of time, switched tabs, or the AI detected high suspicion patterns. Every session is tracked for fairness.</p>
               <button onClick={() => router.push('/dashboard')} className="btn-ghost w-full justify-center border border-[#242424] py-3 rounded-xl text-white hover:bg-white/5">Back to Dashboard</button>
             </div>
           </div>
