@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { offlineAI } from "@/lib/offline-ai/engine";
 import * as pdfjs from "pdfjs-dist";
 import Link from "next/link";
