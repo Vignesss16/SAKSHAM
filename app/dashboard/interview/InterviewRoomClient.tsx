@@ -79,6 +79,7 @@ function InterviewContent({
   // Coding Round State
   const [isCodingRound, setIsCodingRound] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [codingRoundPending, setCodingRoundPending] = useState(false); // delay buffer
 
   // Timer
   useEffect(() => {
@@ -192,30 +193,38 @@ function InterviewContent({
   }, [transcript]);
 
   useEffect(() => {
-    // Check if the agent's message indicates a transition to coding/programming
-    const triggerRegex = /moving on to the next round.*?coding round|which is the coding round|concludes this part of the interview/i;
-    
-    // Ensure the message is actually from the agent, not the user
-    const hasAgentTriggeredInHistory = messageList.some(msg => 
-      String(msg.uid) === agentUID && triggerRegex.test(msg.text.toLowerCase())
+    // Trigger phrases from the AI agent
+    const agentTriggerRegex = /moving on to the next round.*?coding|which is the coding round|concludes this part|let.{0,10}move (to|towards|on to) the coding round|we.{0,10}proceed to the coding/i;
+    // Trigger phrases from the USER (e.g. for demos)
+    const userTriggerRegex = /let.{0,10}move (to|towards|on to) the coding round|skip to (the )?coding|proceed to (the )?coding round/i;
+
+    const agentTriggered = messageList.some(
+      (msg) => String(msg.uid) === agentUID && agentTriggerRegex.test(msg.text)
     );
-    
-    if (hasAgentTriggeredInHistory && !isCodingRound) {
-      console.log("≡ƒÄ» Coding Round Triggered by AI phrase in history.");
-      setIsCodingRound(true);
-      
-      // Stop the agent
-      if (agoraData?.agentId) {
-        fetch('/api/stop-conversation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_id: agoraData.agentId }),
-        }).catch(console.error);
-      }
-      
-      rtmClient?.logout().catch(console.error);
+    const userTriggered = messageList.some(
+      (msg) => String(msg.uid) !== agentUID && userTriggerRegex.test(msg.text)
+    );
+
+    if ((agentTriggered || userTriggered) && !isCodingRound && !codingRoundPending) {
+      console.log('🎯 Coding Round transition triggered. Waiting 3s for AI to finish speaking...');
+      setCodingRoundPending(true);
+
+      // Give the agent 3 seconds to finish its announcement speech before switching
+      setTimeout(() => {
+        setIsCodingRound(true);
+        setCodingRoundPending(false);
+
+        if (agoraData?.agentId) {
+          fetch('/api/stop-conversation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_id: agoraData.agentId }),
+          }).catch(console.error);
+        }
+        rtmClient?.logout().catch(console.error);
+      }, 3000);
     }
-  }, [currentInProgressMessage, messageList, agentUID, isCodingRound, agoraData?.agentId, rtmClient]);
+  }, [messageList, agentUID, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
 
   usePublish([localMicrophoneTrack]);
 
@@ -442,6 +451,35 @@ function InterviewContent({
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>stop_circle</span>
             </button>
           </div>
+
+          {/* Manual coding round trigger for demos */}
+          {!codingRoundPending && (
+            <button
+              onClick={() => {
+                if (!isCodingRound && !codingRoundPending) {
+                  setCodingRoundPending(true);
+                  setTimeout(() => {
+                    setIsCodingRound(true);
+                    setCodingRoundPending(false);
+                    if (agoraData?.agentId) {
+                      fetch('/api/stop-conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agoraData.agentId }) }).catch(console.error);
+                    }
+                    rtmClient?.logout().catch(console.error);
+                  }, 1500);
+                }
+              }}
+              className="px-4 py-2 rounded-xl border border-[#00d1ff]/30 bg-[#00d1ff]/10 text-[#00d1ff] text-xs font-bold uppercase tracking-widest hover:bg-[#00d1ff]/20 transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">code</span>
+              Move to Coding Round
+            </button>
+          )}
+          {codingRoundPending && (
+            <div className="px-4 py-2 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] text-xs font-bold uppercase tracking-widest flex items-center gap-2 animate-pulse">
+              <span className="material-symbols-outlined text-sm">hourglass_top</span>
+              Transitioning to Coding Round...
+            </div>
+          )}
         </section>
 
         {/* Right: Transcription */}
@@ -581,9 +619,32 @@ export default function InterviewRoomClient() {
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0e1417] text-white">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-[#00d1ff]" />
-          <p className="text-[#859399]">Initializing Interview Environment...</p>
+        <div className="flex flex-col items-center gap-6 max-w-sm text-center">
+          {/* Animated ring */}
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-[#00d1ff]/20" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#00d1ff] animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#00d1ff] text-3xl">mic</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-white font-bold text-lg font-['Plus_Jakarta_Sans'] mb-1">Setting Up Your Interview</p>
+            <p className="text-[#859399] text-sm">Connecting to AI interviewer and securing your session...</p>
+          </div>
+          {/* Step indicators */}
+          <div className="flex flex-col gap-2 w-full">
+            {[
+              'Generating personalized questions',
+              'Connecting to voice AI engine',
+              'Initializing secure channel',
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-3 bg-[#121a1e] border border-[#242b2e] rounded-lg px-4 py-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#00d1ff] shrink-0" />
+                <span className="text-xs text-[#859399]">{step}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

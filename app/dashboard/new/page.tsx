@@ -128,9 +128,9 @@ export default function NewInterviewPage() {
           </div>
 
           {/* Start Button */}
-          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 17, padding: 18, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-            <span className="material-symbols-outlined">mic</span>
-            {isLoading ? 'Generating Prompt...' : 'Start Voice Interview'}
+          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 17, padding: 18, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.8 : 1 }}>
+            <span className="material-symbols-outlined">{isLoading ? 'hourglass_top' : 'mic'}</span>
+            {isLoading ? 'Preparing your interview session...' : 'Start Voice Interview'}
           </button>
         </div>
       </div>
