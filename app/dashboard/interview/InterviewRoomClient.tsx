@@ -206,36 +206,41 @@ function InterviewContent({
 
     if (allMessages.length === 0) return;
 
-    // To handle cases where the trigger phrase is split across multiple transcription chunks,
-    // we join the last 3 messages into a single text block for testing.
-    const recentText = allMessages.slice(-3).map(m => m.text).join(' ').toLowerCase();
+    // Scan the ENTIRE transcript to ensure no split fragments are missed
+    const fullTranscriptText = allMessages.map(m => m.text).join(' ').toLowerCase();
 
-    // Look for ANY match in the recent history
-    const agentTriggered = agentTriggerRegex.test(recentText);
-    const userTriggered = userTriggerRegex.test(recentText);
+    // Look for ANY match in the conversation history
+    const agentTriggered = agentTriggerRegex.test(fullTranscriptText);
+    const userTriggered = userTriggerRegex.test(fullTranscriptText);
 
     if (agentTriggered || userTriggered) {
-      console.log('✅ Match found in recent history:', recentText);
-      setCodingRoundPending(true);
-
-      // Transition after 2.5 seconds
-      const timer = setTimeout(() => {
-        setIsCodingRound(true);
-        setCodingRoundPending(false);
-
-        if (agoraData?.agentId) {
-          fetch('/api/stop-conversation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent_id: agoraData.agentId }),
-          }).catch(console.error);
-        }
-        rtmClient?.logout().catch(console.error);
-      }, 2500);
-
-      return () => clearTimeout(timer);
+      handleTriggerTransition();
     }
-  }, [messageList, currentInProgressMessage, agentUID, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
+  }, [messageList, currentInProgressMessage, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
+
+  const handleTriggerTransition = () => {
+    if (isCodingRound || codingRoundPending) return;
+    
+    console.log('🎯 Transition Triggered!');
+    setCodingRoundPending(true);
+
+    // Transition after 2.5 seconds
+    const timer = setTimeout(() => {
+      setIsCodingRound(true);
+      setCodingRoundPending(false);
+
+      if (agoraData?.agentId) {
+        fetch('/api/stop-conversation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: agoraData.agentId }),
+        }).catch(console.error);
+      }
+      rtmClient?.logout().catch(console.error);
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  };
 
   usePublish([localMicrophoneTrack]);
 
@@ -394,6 +399,20 @@ function InterviewContent({
               <span className="material-symbols-outlined text-[#00d1ff]">lightbulb</span>
               <span className="text-sm text-[#859399] uppercase tracking-widest font-bold">Interview Tips</span>
             </div>
+            
+            {/* Manual Fallback Button */}
+            <div className="flex flex-col items-center gap-4 py-4">
+              <button
+                onClick={handleTriggerTransition}
+                disabled={codingRoundPending}
+                className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-[#121a1e] border border-[#00d1ff]/20 text-[#00d1ff] hover:bg-[#00d1ff] hover:text-[#001f28] transition-all duration-300 font-bold shadow-lg shadow-[#00d1ff]/5"
+              >
+                <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">code</span>
+                Move to Coding Round
+              </button>
+              <p className="text-[10px] text-[#4a5559] uppercase tracking-[0.2em]">Manual Fallback</p>
+            </div>
+
             <div className="font-['Plus_Jakarta_Sans'] text-sm font-medium text-[#859399] leading-relaxed overflow-y-auto max-h-[300px]">
               <ul className="list-disc pl-5 space-y-3">
                 <li>Speak clearly and at a moderate pace.</li>
