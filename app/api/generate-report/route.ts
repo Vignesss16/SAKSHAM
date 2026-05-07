@@ -44,42 +44,57 @@ export async function POST(req: Request) {
         profiles!inner (full_name)
       `);
 
-    const prompt = `You are an expert technical interviewer evaluating a candidate.
+    const isTechnical = (variables?.role || '').toLowerCase().includes('engineer') || 
+                        (variables?.role || '').toLowerCase().includes('developer') || 
+                        (variables?.role || '').toLowerCase().includes('tech') || 
+                        (variables?.role || '').toLowerCase().includes('data');
+    
+    const isSales = (variables?.role || '').toLowerCase().includes('sales') || 
+                    (variables?.role || '').toLowerCase().includes('marketing') || 
+                    (variables?.role || '').toLowerCase().includes('business');
+
+    const metricsLabels = isTechnical 
+      ? ["Content Quality", "Clarity", "Confidence", "Technical Accuracy"]
+      : isSales
+        ? ["Value Proposition", "Persuasion & Negotiation", "Communication", "Strategic Thinking"]
+        : ["Behavioral Alignment", "Cultural Fit", "Empathy", "Clarity"];
+
+    const prompt = `You are an expert interviewer evaluating a candidate for a ${isTechnical ? 'Technical' : isSales ? 'Sales' : 'Professional'} role.
     
     Job Details:
-    Role: ${variables?.role || 'Software Engineer'}
-    Company: ${variables?.company || 'Tech Company'}
+    Role: ${variables?.role || 'Professional'}
+    Company: ${variables?.company || 'Organization'}
     Difficulty: ${variables?.difficulty || 'Mid-Level'}
     
     Conversation Transcript:
     ${JSON.stringify(safeTranscript, null, 2)}
     
-    Coding Round Submission (Language: ${language || 'N/A'}):
-    ${code || 'No code submitted.'}
+    Round 2 Submission (Language/Context: ${language || 'N/A'}):
+    ${code || 'No submission.'}
     
-    Analyze the candidate's performance across technical, behavioral, and communication skills.
-    Generate a detailed JSON report with the exact structure below. Do not include markdown formatting or backticks around the JSON.
+    Analyze the candidate's performance across technical/role-specific, behavioral, and communication skills.
+    Generate a detailed JSON report with the exact structure below. 
+    
+    IMPORTANT: Use the following metrics for the metrics array: ${JSON.stringify(metricsLabels)}
+    
+    Return ONLY a JSON object:
     {
       "overallScore": 85,
-      "summary": "A brief 2-3 sentence summary of the candidate's performance. Mention if they didn't speak or code.",
+      "summary": "A brief 2-3 sentence summary.",
       "metrics": [
-        { "label": "Content Quality", "score": 88, "note": "Short note" },
-        { "label": "Clarity", "score": 75, "note": "Short note" },
-        { "label": "Confidence", "score": 92, "note": "Short note" },
-        { "label": "Technical Accuracy", "score": 80, "note": "Short note" }
+        { "label": "${metricsLabels[0]}", "score": 88, "note": "Note" },
+        { "label": "${metricsLabels[1]}", "score": 75, "note": "Note" },
+        { "label": "${metricsLabels[2]}", "score": 92, "note": "Note" },
+        { "label": "${metricsLabels[3]}", "score": 80, "note": "Note" }
       ],
       "strengths": [
-        { "title": "Strength 1", "desc": "Description" },
-        { "title": "Strength 2", "desc": "Description" },
-        { "title": "Strength 3", "desc": "Description" }
+        { "title": "Strength Title", "desc": "Strength Description" }
       ],
       "improvements": [
-        { "title": "Improvement 1", "desc": "Description" },
-        { "title": "Improvement 2", "desc": "Description" },
-        { "title": "Improvement 3", "desc": "Description" }
+        { "title": "Improvement Title", "desc": "Improvement Description" }
       ],
       "suggestedMentors": [
-        { "id": "mentor_uuid", "name": "Mentor Name", "reason": "Specific reason why this mentor's expertise (e.g. System Design at Google) helps with the improvement area 'Improvement 1'." }
+        { "id": "mentor_uuid", "name": "Mentor Name", "reason": "Reason" }
       ]
     }
     

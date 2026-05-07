@@ -202,11 +202,9 @@ function InterviewContent({
 
     // Combine all messages (completed + in-progress)
     const allMessages = [...messageList];
-    if (currentInProgressMessage) allMessages.push(currentInProgressMessage);
+    if (currentInProgressMessage) return; // Wait until the message is COMPLETED, not just in-progress
 
-    if (allMessages.length === 0) return;
-
-    // Scan the ENTIRE transcript to ensure no split fragments are missed
+    // Scan the ENTIRE transcript
     const fullTranscriptText = allMessages.map(m => m.text).join(' ').toLowerCase();
 
     // Look for ANY match in the conversation history

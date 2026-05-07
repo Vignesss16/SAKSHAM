@@ -86,16 +86,21 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
       setTimeout(() => onComplete(submission, language), 3000);
     };
 
-    const handleVisibilityChange = () => { if (document.hidden) handleViolation(); };
-    const handleBlur = () => handleViolation();
+    // Grace period to prevent false-positive cheating detections during mount
+    const graceTimeout = setTimeout(() => {
+      const handleVisibilityChange = () => { if (document.hidden) handleViolation(); };
+      const handleBlur = () => handleViolation();
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleBlur);
-    
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleBlur);
-    };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("blur", handleBlur);
+      
+      return () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        window.removeEventListener("blur", handleBlur);
+      };
+    }, 3000);
+
+    return () => clearTimeout(graceTimeout);
   }, [started, failed, code, language, onComplete]);
 
   const fetchQuestion = async (difficultyOverride: string) => {
