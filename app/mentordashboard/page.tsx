@@ -64,7 +64,14 @@ export default async function MentorDashboardPage() {
   }
 
   const { data: mentorData } = await supabase.from("mentors").select("*").eq("user_id", user.id).maybeSingle();
-  const { count: sessionCount } = await supabase.from("mentor_bookings").select("*", { count: "exact", head: true }).eq("mentor_id", user.id);
+  const { data: bookings, count: sessionCount } = await supabase
+    .from("mentor_bookings")
+    .select("payment_amount, commission_amount, status", { count: "exact" })
+    .eq("mentor_id", user.id);
+
+  // Calculate earnings
+  const completedBookings = (bookings || []).filter(b => b.status === "completed");
+  const totalEarnings = completedBookings.reduce((sum, b) => sum + ((b.payment_amount || 0) - (b.commission_amount || 0)), 0);
 
   // Fetch next mentorship session
   const { data: nextSession } = await supabase
@@ -112,7 +119,7 @@ export default async function MentorDashboardPage() {
       <div className={`grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5 mb-8 ${!isApproved ? 'opacity-40 grayscale-[0.5]' : ''}`}>
         <div className="stat-card" style={{ borderTopColor: "var(--c-primary)" }}>
           <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Total Earnings</span>
-          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">₹0.00</span>
+          <span className="font-heading text-[40px] font-black text-[var(--c-text)]">₹{totalEarnings.toLocaleString()}</span>
         </div>
         <div className="stat-card" style={{ borderTopColor: "var(--c-secondary)" }}>
           <span className="text-[11px] text-muted font-semibold uppercase tracking-wider block mb-1">Active Sessions</span>

@@ -137,7 +137,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
 
       // Fetch user profile for presence
       const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
-      setUserRole(profile?.role || 'student');
+      setUserRole(profile?.role || 'user');
 
       // Fetch existing messages
       const { data: msgs } = await supabase
@@ -195,7 +195,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
             });
             
             // Special alert for student if mentor joins
-            if (profile?.role === 'student' && joinedUser.role === 'mentor') {
+            if (profile?.role === 'user' && joinedUser.role === 'mentor') {
               setToast({ 
                 message: "🚀 Mentor has joined! Please enable your camera and mic.", 
                 type: 'alert' 
@@ -277,7 +277,7 @@ function CallRoom({ appId, channelName, token, uid }: { appId: string, channelNa
   };
 
   const endCall = async () => {
-    if (userRole === 'student') {
+    if (userRole === 'user' || userRole === 'student') {
       router.push(`/dashboard/review/${channelName}`);
     } else {
       router.push(`/mentordashboard`);
