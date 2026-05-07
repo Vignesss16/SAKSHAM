@@ -87,9 +87,14 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
     };
 
     // Grace period to prevent false-positive cheating detections during mount
+    // Increase to 5 seconds for slower devices and smoother transitions
     const graceTimeout = setTimeout(() => {
-      const handleVisibilityChange = () => { if (document.hidden) handleViolation(); };
-      const handleBlur = () => handleViolation();
+      const handleVisibilityChange = () => { 
+        if (document.hidden && started && !failed) handleViolation(); 
+      };
+      const handleBlur = () => {
+        if (started && !failed) handleViolation();
+      };
 
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("blur", handleBlur);
@@ -98,7 +103,7 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
         window.removeEventListener("blur", handleBlur);
       };
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(graceTimeout);
   }, [started, failed, code, language, onComplete]);
