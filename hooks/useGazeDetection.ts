@@ -5,7 +5,7 @@ export type GazeStatus = "idle" | "calibrating" | "ok" | "warning" | "terminated
 export type ExamMode = "strict" | "relaxed" | "standard";
 
 interface UseGazeDetectionOptions {
-  enabled: boolean;
+  enabled: boolean; // This now controls AI ANALYSIS, not the camera itself
   mode?: ExamMode;
   onViolation?: (score: number, message: string) => void;
   onTerminate?: () => void;
@@ -35,13 +35,12 @@ export function useGazeDetection({
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const destroyedRef = useRef(false);
-  const cameraRunningRef = useRef(false);
+  const cameraReadyRef = useRef(false);
 
-  // Behavior Weights based on Mode - Memoized to prevent camera re-init loops
   const weights = useMemo(() => ({
     gaze: mode === "relaxed" ? 0.4 : mode === "strict" ? 1.5 : 0.8,
     faceMissing: mode === "strict" ? 2.5 : 1.5,
-    decay: 0.5, // How fast the score drops when behavior is normal
+    decay: 0.5,
   }), [mode]);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
@@ -60,11 +59,9 @@ export function useGazeDetection({
 
   const handleScoreUpdate = useCallback((delta: number) => {
     const now = Date.now();
-    // Cooldown logic: don't update if in grace window (first 3s of a look-away)
     if (delta > 0 && now - lastGraceWindowRef.current < 3000 && lastGraceWindowRef.current !== 0) {
       return;
     }
-
     scoreRef.current = Math.min(100, Math.max(0, scoreRef.current + delta));
     setSuspicionScore(Math.floor(scoreRef.current));
 
@@ -72,7 +69,6 @@ export function useGazeDetection({
       setStatus("terminated");
       onTerminate?.();
     } else if (scoreRef.current >= 40) {
-      // Only warn every 10 seconds to prevent alert fatigue
       if (now - lastViolationTimeRef.current > 10000) {
         setStatus("warning");
         onViolation?.(scoreRef.current, "Suspicious behavior pattern detected. Please stay focused.");
@@ -82,15 +78,16 @@ export function useGazeDetection({
     }
   }, [onViolation, onTerminate]);
 
+  // PHASE 1: Camera Initialization (Runs on Mount)
   useEffect(() => {
-    if (!enabled) return;
     destroyedRef.current = false;
-
-    async function init() {
+    
+    async function startCamera() {
+      // Small delay to ensure DOM is ready
+      await new Promise(r => setTimeout(r, 500));
       const videoEl = videoRef.current;
-      if (!videoEl) return;
+      if (!videoEl || streamRef.current) return;
 
-      // 1. Init Camera
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" },
@@ -98,80 +95,98 @@ export function useGazeDetection({
         });
         streamRef.current = stream;
         videoEl.srcObject = stream;
-        await videoEl.play();
+        
+        // Ensure video plays and stays playing
+        videoEl.onloadedmetadata = () => {
+          videoEl.play().catch(e => console.error("Video play failed", e));
+          cameraReadyRef.current = true;
+          setStatus("ok");
+        };
       } catch (e) {
+        console.error("Camera access failed", e);
         setStatus("idle");
-        return;
       }
-
-      setStatus("calibrating");
-
-      // 2. Load MediaPipe
-      const mod = await import("@mediapipe/face_mesh");
-      const fm = new mod.FaceMesh({
-        locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
-      });
-      fm.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-
-      fm.onResults((results: any) => {
-        if (destroyedRef.current || !faceMeshRef.current) return;
-
-        if (!results.multiFaceLandmarks?.length) {
-          faceMissingFramesRef.current++;
-          if (faceMissingFramesRef.current > 30) { // ~1s
-            handleScoreUpdate(weights.faceMissing);
-          }
-        } else {
-          faceMissingFramesRef.current = 0;
-          const score = computeGazeScore(results.multiFaceLandmarks[0]);
-          const isLookingAway = score < 0.45;
-
-          if (isLookingAway) {
-            if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
-            gazeOffFramesRef.current++;
-            
-            // Continuous deviation logic
-            if (gazeOffFramesRef.current > 60) { // ~2s
-               handleScoreUpdate(weights.gaze);
-            }
-          } else {
-            // Behavioral decay: score drops when user is focused
-            lastGraceWindowRef.current = 0;
-            gazeOffFramesRef.current = 0;
-            handleScoreUpdate(-weights.decay);
-          }
-        }
-      });
-
-      faceMeshRef.current = fm;
-      cameraRunningRef.current = true;
-      setStatus("ok");
-
-      const sendFrame = async () => {
-        if (destroyedRef.current || !faceMeshRef.current) return;
-        if (videoEl.readyState >= 2) {
-          await faceMeshRef.current.send({ image: videoEl });
-        }
-        rafRef.current = requestAnimationFrame(sendFrame);
-      };
-      rafRef.current = requestAnimationFrame(sendFrame);
     }
 
-    init();
+    startCamera();
 
     return () => {
       destroyedRef.current = true;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      if (faceMeshRef.current) faceMeshRef.current.close();
       streamRef.current?.getTracks().forEach(t => t.stop());
-      setStatus("idle");
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
     };
-  }, [enabled, weights.gaze, weights.faceMissing, weights.decay, handleScoreUpdate, computeGazeScore]);
+  }, []);
+
+  // PHASE 2: AI Analysis (Starts when enabled=true)
+  useEffect(() => {
+    if (!enabled || !cameraReadyRef.current) return;
+
+    async function startAnalysis() {
+      const videoEl = videoRef.current;
+      if (!videoEl) return;
+
+      setStatus("calibrating");
+      
+      try {
+        const mod = await import("@mediapipe/face_mesh");
+        const fm = new mod.FaceMesh({
+          locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
+        });
+        
+        fm.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+
+        fm.onResults((results: any) => {
+          if (destroyedRef.current || !faceMeshRef.current) return;
+          if (!results.multiFaceLandmarks?.length) {
+            faceMissingFramesRef.current++;
+            if (faceMissingFramesRef.current > 30) handleScoreUpdate(weights.faceMissing);
+          } else {
+            faceMissingFramesRef.current = 0;
+            const score = computeGazeScore(results.multiFaceLandmarks[0]);
+            if (score < 0.45) {
+              if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
+              gazeOffFramesRef.current++;
+              if (gazeOffFramesRef.current > 60) handleScoreUpdate(weights.gaze);
+            } else {
+              lastGraceWindowRef.current = 0;
+              gazeOffFramesRef.current = 0;
+              handleScoreUpdate(-weights.decay);
+            }
+          }
+        });
+
+        faceMeshRef.current = fm;
+        setStatus("ok");
+
+        const sendFrame = async () => {
+          if (destroyedRef.current || !faceMeshRef.current || !enabled) return;
+          if (videoEl.readyState >= 2) {
+            await faceMeshRef.current.send({ image: videoEl });
+          }
+          rafRef.current = requestAnimationFrame(sendFrame);
+        };
+        rafRef.current = requestAnimationFrame(sendFrame);
+      } catch (e) {
+        console.error("AI Analysis failed to start", e);
+      }
+    }
+
+    startAnalysis();
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (faceMeshRef.current) {
+        faceMeshRef.current.close();
+        faceMeshRef.current = null;
+      }
+    };
+  }, [enabled, weights, handleScoreUpdate, computeGazeScore]);
 
   return { videoRef, suspicionScore, status };
 }
