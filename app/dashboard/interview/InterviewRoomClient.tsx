@@ -337,7 +337,8 @@ function InterviewContent({
     progressText = "Generating Report";
     progressPercentage = 100;
   } else if (isCodingRound) {
-    progressText = "Coding Phase";
+    const isSalesOrHR = systemPrompt.toLowerCase().includes('sales') || systemPrompt.toLowerCase().includes('hr');
+    progressText = isSalesOrHR ? "Strategic Phase" : "Coding Phase";
     progressPercentage = 75;
   }
 

@@ -121,6 +121,19 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
       setOutput('');
     } catch (err) {
       console.error(err);
+      // Fallback for non-technical roles if API fails
+      if (!variables.role?.toLowerCase().includes('engineer')) {
+        setQuestion({
+          title: "Strategic Response Challenge",
+          description: "Given a sudden shift in market conditions, how would you adjust your strategy to maintain target alignment? Draft your response in the editor.",
+          languageSnippets: {
+            javascript: "// DRAFT YOUR RESPONSE BELOW\n\nStrategy Overview:\n\n[Write here]",
+            python: "# Draft here",
+            java: "// Draft here",
+            cpp: "// Draft here"
+          }
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -234,11 +247,14 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   }, [started, failed, showAvatar, code, lastVisionCheck]);
 
   if (isLoading) {
+    const isTech = localStorage.getItem('omnidimension_variables')?.toLowerCase().includes('engineer') || false;
     return (
       <div className="flex-1 flex items-center justify-center h-[calc(100vh-64px-40px)]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-[#00d1ff]" />
-          <p className="text-[#859399]">Generating {questionIndex === 0 ? 'Easy' : 'Medium'} coding question...</p>
+          <p className="text-[#859399]">
+            {isTech ? `Generating ${questionIndex === 0 ? 'Easy' : 'Medium'} coding question...` : 'Preparing your Strategic Case Study...'}
+          </p>
         </div>
       </div>
     );
