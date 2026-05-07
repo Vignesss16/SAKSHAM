@@ -214,7 +214,7 @@ function InterviewContent({
     const userTriggered = userTriggerRegex.test(fullTranscriptText);
 
     if (agentTriggered || userTriggered) {
-      handleTriggerTransition();
+      handleTriggerTransitionInternal();
     }
   }, [messageList, currentInProgressMessage, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
 
