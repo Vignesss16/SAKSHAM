@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 export type GazeStatus = "idle" | "calibrating" | "ok" | "warning" | "terminated";
 export type ExamMode = "strict" | "relaxed" | "standard";
@@ -37,12 +37,12 @@ export function useGazeDetection({
   const destroyedRef = useRef(false);
   const cameraRunningRef = useRef(false);
 
-  // Behavior Weights based on Mode
-  const weights = {
+  // Behavior Weights based on Mode - Memoized to prevent camera re-init loops
+  const weights = useMemo(() => ({
     gaze: mode === "relaxed" ? 0.4 : mode === "strict" ? 1.5 : 0.8,
     faceMissing: mode === "strict" ? 2.5 : 1.5,
     decay: 0.5, // How fast the score drops when behavior is normal
-  };
+  }), [mode]);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
     const li = landmarks[468]; const lo = landmarks[33]; const lc = landmarks[133];
