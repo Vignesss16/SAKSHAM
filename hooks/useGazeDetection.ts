@@ -78,28 +78,49 @@ export function useGazeDetection({
     }
   }, [onViolation, onTerminate]);
 
-  // PHASE 1: Immediate Camera Init
+  // PHASE 1: Robust Camera Init
   useEffect(() => {
     destroyedRef.current = false;
     let stream: MediaStream | null = null;
+    let retryCount = 0;
     
     async function startCamera() {
+      if (destroyedRef.current) return;
+
       const videoEl = videoRef.current;
-      if (!videoEl) return;
+      // If video element isn't ready yet, retry up to 20 times (2 seconds)
+      if (!videoEl) {
+        if (retryCount < 20) {
+          retryCount++;
+          setTimeout(startCamera, 100);
+        }
+        return;
+      }
 
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" },
           audio: false,
         });
+        
         streamRef.current = stream;
         videoEl.srcObject = stream;
+        videoEl.muted = true;
+        videoEl.setAttribute("playsinline", "true");
         
-        await videoEl.play().catch(e => console.error("Initial play failed", e));
+        // Force play immediately
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error("Autoplay prevented:", error);
+            // Retry play on interaction if needed, but muted should work
+          });
+        }
+
         setIsCameraReady(true);
         setStatus("ok");
       } catch (e) {
-        console.error("Camera Init Error", e);
+        console.error("Camera Hardware Error", e);
         setStatus("idle");
       }
     }
@@ -115,7 +136,7 @@ export function useGazeDetection({
     };
   }, []);
 
-  // PHASE 2: AI Analysis (Starts when enabled=true AND camera is ready)
+  // PHASE 2: AI Analysis
   useEffect(() => {
     if (!enabled || !isCameraReady) return;
 
@@ -170,7 +191,7 @@ export function useGazeDetection({
         };
         rafRef.current = requestAnimationFrame(sendFrame);
       } catch (e) {
-        console.error("AI Start Error", e);
+        console.error("AI Analysis Loop Error", e);
       }
     }
 
