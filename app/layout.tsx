@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description: 'AI-powered interview preparation. Practice with realistic mock interviews, get instant feedback, and land your dream job.',
 }
 
+import { AccessibilityProvider } from "@/context/AccessibilityContext";
+import AccessibilityToolbar from "@/components/accessibility/AccessibilityToolbar";
+import VoiceAssistant from "@/components/accessibility/VoiceAssistant";
+
 export default function RootLayout({
   children,
 }: {
@@ -19,7 +23,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="mesh-bg min-h-screen antialiased">{children}</body>
+      <body className="mesh-bg min-h-screen antialiased transition-all duration-300">
+        <AccessibilityProvider>
+          {children}
+          <AccessibilityToolbar />
+          <VoiceAssistant />
+        </AccessibilityProvider>
+      </body>
     </html>
   )
 }

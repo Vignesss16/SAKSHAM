@@ -389,5 +389,23 @@ body {
     transform: translateY(20px); transition: transform 0.2s;
   }
   .modal-overlay.open .modal-box { transform: translateY(0); }
+
+  /* Neural Accessibility Suite */
+  .high-contrast {
+    filter: contrast(1.5) saturate(0) brightness(1.2) !important;
+    --c-primary: #00d1ff !important;
+    --c-bg: #000000 !important;
+    --c-text: #ffffff !important;
+    --c-border: #ffffff !important;
+    background: #000 !important;
+    color: #fff !important;
+  }
+
+  .dyslexia-font {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+    letter-spacing: 0.1em !important;
+    word-spacing: 0.2em !important;
+    line-height: 1.8 !important;
+  }
 }
 
