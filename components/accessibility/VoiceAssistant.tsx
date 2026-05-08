@@ -15,6 +15,24 @@ export default function VoiceAssistant() {
   const [feedback, setFeedback] = useState("");
   const [isMinimized, setIsMinimized] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Greeting Protocol with Neural Delay to avoid collision
+  useEffect(() => {
+    if (mounted && voiceAssistantActive) {
+      const timer = setTimeout(() => {
+        speak("Neural Voice Assistant active. How can I help you navigate SAKSHAM today?");
+      }, 500);
+      return () => clearTimeout(timer);
+    } else if (mounted) {
+      stopSpeaking();
+    }
+  }, [voiceAssistantActive, mounted, speak, stopSpeaking]);
+
   // Command Processor
   useEffect(() => {
     if (transcript) {

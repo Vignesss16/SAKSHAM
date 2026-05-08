@@ -30,7 +30,10 @@ export default function AccessibilityToolbar() {
 
   const handleToggle = (fn: () => void, label: string) => {
     fn();
-    speak(`${label} toggled`);
+    // Only speak if it's NOT the voice assistant, as the assistant has its own greeting
+    if (label !== "Voice Assistant") {
+      speak(`${label} toggled`);
+    }
   };
 
   return (
