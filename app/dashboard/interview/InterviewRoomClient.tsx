@@ -29,8 +29,8 @@ import {
 } from 'agora-agent-client-toolkit';
 import { AgentVisualizer, ConvoTextStream } from 'agora-agent-uikit';
 import { MicButtonWithVisualizer } from 'agora-agent-uikit/rtc';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 import CodingRound from './CodingRound';
+import AvatarInterviewer, { AvatarState } from '@/components/AvatarInterviewer';
 
 import { DEFAULT_AGENT_UID } from '@/lib/agora';
 import {
@@ -82,6 +82,7 @@ function InterviewContent({
   const [isCodingRound, setIsCodingRound] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [codingRoundPending, setCodingRoundPending] = useState(false); // delay buffer
+  const [audioVolume, setAudioVolume] = useState(0);
 
   // Timer
   useEffect(() => {
@@ -214,6 +215,14 @@ function InterviewContent({
     const userTriggered = userTriggerRegex.test(fullTranscriptText);
 
     if (agentTriggered || userTriggered) {
+      const transitionText = "Excellent work. Now, let's move to the coding round to see your technical skills in action.";
+      
+      // Speak the transition through the avatar
+      if (window.speechSynthesis) {
+        const utt = new SpeechSynthesisUtterance(transitionText);
+        window.speechSynthesis.speak(utt);
+      }
+      
       handleTriggerTransitionInternal();
     }
   }, [messageList, currentInProgressMessage, isCodingRound, codingRoundPending, agoraData?.agentId, rtmClient]);
@@ -263,10 +272,30 @@ function InterviewContent({
     setConnectionState(curState);
   });
 
-  const visualizerState = useMemo(
-    () => mapAgentVisualizerState(agentState, isAgentConnected, connectionState),
-    [agentState, isAgentConnected, connectionState],
-  );
+  const avatarState = useMemo((): AvatarState => {
+    if (visualizerState === 'talking') return 'talking';
+    if (visualizerState === 'listening') return 'idle';
+    if (connectionState === 'CONNECTING') return 'thinking';
+    return 'idle';
+  }, [visualizerState, connectionState]);
+
+  // Track remote agent volume for lip sync
+  useEffect(() => {
+    if (!isAgentConnected) {
+      setAudioVolume(0);
+      return;
+    }
+
+    const agentUser = remoteUsers.find(u => u.uid.toString() === agentUID);
+    if (!agentUser?.audioTrack) return;
+
+    const interval = setInterval(() => {
+      const vol = agentUser.audioTrack?.getVolumeLevel() || 0;
+      setAudioVolume(vol);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [remoteUsers, isAgentConnected, agentUID]);
 
   const handleMicToggle = useCallback(async () => {
     const next = !isEnabled;
@@ -453,17 +482,15 @@ function InterviewContent({
         {/* Center: Waveform + Controls */}
         <section className="col-span-12 lg:col-span-4 flex flex-col items-center justify-center gap-16 h-full">
           {/* Waveform Visualizer */}
-          <div className="relative w-full max-w-xs aspect-square flex items-center justify-center">
-            <AgentVisualizer state={visualizerState} size="lg" />
+          <div className="relative w-full aspect-square flex items-center justify-center">
+            <div className="w-full h-[500px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <AvatarInterviewer state={avatarState} audioVolume={audioVolume} />
+            </div>
             {remoteUsers.map((user) => (
               <div key={user.uid} className="hidden">
                 <RemoteUser user={user} />
               </div>
             ))}
-            <div className="absolute -bottom-10 flex flex-col items-center">
-              <span className="text-sm font-bold text-white tracking-widest uppercase mb-2">Analyzing Audio</span>
-              <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-[#00d1ff] to-transparent opacity-50"></div>
-            </div>
           </div>
 
           {/* Controls */}

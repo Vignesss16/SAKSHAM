@@ -3,7 +3,8 @@ import Editor from '@monaco-editor/react';
 import { Loader2, Play, CheckCircle2, Sparkles, Send } from 'lucide-react';
 import { useGazeDetection } from "@/hooks/useGazeDetection";
 import GazeProctor from "@/components/GazeProctor";
-import { AgentVisualizer } from 'agora-agent-uikit';
+import AvatarInterviewer, { AvatarState } from '@/components/AvatarInterviewer';
+import { useCodeAnalysis } from '@/hooks/useCodeAnalysis';
 import { mapAgentVisualizerState } from '@/lib/conversation';
 import { createClient } from "@/lib/supabase/client";
 
@@ -198,36 +199,16 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
     }
   };
 
-  // Run vision analysis for technical hints
-  const runVisionAnalysis = async () => {
-    if (!showAvatar || isVisionLoading || !started || failed || !isTech) return;
-    
-    setIsVisionLoading(true);
-    try {
-      const storedVars = localStorage.getItem('omnidimension_variables');
-      const vars = storedVars ? JSON.parse(storedVars) : {};
+  const codeInsights = useCodeAnalysis(code, language);
 
-      const res = await fetch('/api/vision-helper', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: "data:image/jpeg;base64,...",
-          code: code,
-          jobRole: vars.role || "Professional"
-        })
-      });
-
-      const data = await res.json();
-      if (data.advice) {
-        setAiAdvice(data.advice);
-        speakAdvice(data.advice);
-      }
-    } catch (err) {
-      console.error("Analysis Failed", err);
-    } finally {
-      setIsVisionLoading(false);
+  // Trigger spoken advice based on new insights
+  useEffect(() => {
+    if (codeInsights.length > 0 && !isSpeaking && started && !failed) {
+      const latestInsight = codeInsights[codeInsights.length - 1];
+      setAiAdvice(latestInsight.message);
+      speakAdvice(latestInsight.message);
     }
-  };
+  }, [codeInsights, isSpeaking, started, failed]);
 
   const speakAdvice = (text: string) => {
     if (!window.speechSynthesis) return;
@@ -250,9 +231,11 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
     return () => clearInterval(interval);
   }, [started, failed, showAvatar, code, lastVisionCheck, isTech]);
 
-  const visualizerState = useMemo(() => {
-    return isSpeaking ? 'talking' : 'ambient';
-  }, [isSpeaking]);
+  const avatarState = useMemo((): AvatarState => {
+    if (isSpeaking) return 'talking';
+    if (codeInsights.length > 0) return 'thinking';
+    return 'idle';
+  }, [isSpeaking, codeInsights]);
 
   if (isLoading) {
     return (
@@ -340,19 +323,16 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
         {/* Left: Challenge Description */}
         <section className="col-span-12 lg:col-span-4 flex flex-col gap-6 h-full">
           {/* AI Companion Visualizer */}
-          <div className="h-64 bg-[#121a1e] border border-[#242424] rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isSpeaking ? 'bg-[#00d1ff] animate-pulse' : 'bg-[#4a5559]'}`} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#859399]">AI Analyst Active</span>
+          <div className="h-72 bg-[#121a1e] border border-[#242424] rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
+            <div className="absolute inset-0">
+               <AvatarInterviewer state={avatarState} audioVolume={isSpeaking ? 0.3 : 0} />
             </div>
             
-            <AgentVisualizer state={visualizerState} size="md" />
-
             {aiAdvice && (
-              <div className="absolute bottom-4 left-4 right-4 bg-[#0e1417]/80 backdrop-blur-md p-4 rounded-xl border border-white/5 animate-in fade-in slide-in-from-bottom-4 shadow-xl">
+              <div className="absolute bottom-4 left-4 right-4 bg-[#0e1417]/90 backdrop-blur-md p-4 rounded-xl border border-[#00d1ff]/20 animate-in fade-in slide-in-from-bottom-4 shadow-xl z-30">
                 <div className="flex items-start gap-2">
                    <Sparkles className="w-3 h-3 text-[#00d1ff] shrink-0 mt-0.5" />
-                   <p className="text-xs text-[#bbc9cf] leading-relaxed italic font-medium">"{aiAdvice}"</p>
+                   <p className="text-[11px] text-[#bbc9cf] leading-relaxed italic font-medium">"{aiAdvice}"</p>
                 </div>
               </div>
             )}

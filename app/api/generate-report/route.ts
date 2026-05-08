@@ -72,32 +72,29 @@ export async function POST(req: Request) {
     Round 2 Submission (Language/Context: ${language || 'N/A'}):
     ${code || 'No submission.'}
     
-    CRITICAL INSTRUCTIONS:
-    1. ANALYZE the candidate's performance across technical/role-specific, behavioral, and communication skills.
-    2. CALCULATE a unique, realistic score (0-100) based STRICTLY on the evidence in the transcript and code.
-    3. DO NOT use placeholder scores like 80 or 85. Be objective. If the transcript is short or missing, the score should reflect that.
-    4. Provide specific, actionable feedback in the summary and improvement areas.
+    Analyze the candidate's performance across technical/role-specific, behavioral, and communication skills.
+    Generate a detailed JSON report with the exact structure below. 
     
-    Use these metrics: ${JSON.stringify(metricsLabels)}
+    IMPORTANT: Use the following metrics for the metrics array: ${JSON.stringify(metricsLabels)}
     
     Return ONLY a JSON object:
     {
-      "overallScore": [CALCULATED_SCORE],
-      "summary": "[PROFESSIONAL_SUMMARY]",
+      "overallScore": 85,
+      "summary": "A brief 2-3 sentence summary.",
       "metrics": [
-        { "label": "${metricsLabels[0]}", "score": [SCORE], "note": "[REASON]" },
-        { "label": "${metricsLabels[1]}", "score": [SCORE], "note": "[REASON]" },
-        { "label": "${metricsLabels[2]}", "score": [SCORE], "note": "[REASON]" },
-        { "label": "${metricsLabels[3]}", "score": [SCORE], "note": "[REASON]" }
+        { "label": "${metricsLabels[0]}", "score": 88, "note": "Note" },
+        { "label": "${metricsLabels[1]}", "score": 75, "note": "Note" },
+        { "label": "${metricsLabels[2]}", "score": 92, "note": "Note" },
+        { "label": "${metricsLabels[3]}", "score": 80, "note": "Note" }
       ],
       "strengths": [
-        { "title": "...", "desc": "..." }
+        { "title": "Strength Title", "desc": "Strength Description" }
       ],
       "improvements": [
-        { "title": "...", "desc": "..." }
+        { "title": "Improvement Title", "desc": "Improvement Description" }
       ],
       "suggestedMentors": [
-        { "id": "...", "name": "...", "reason": "..." }
+        { "id": "mentor_uuid", "name": "Mentor Name", "reason": "Reason" }
       ]
     }
     
