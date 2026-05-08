@@ -38,9 +38,9 @@ export function useGazeDetection({
   const destroyedRef = useRef(false);
 
   const weights = useMemo(() => ({
-    gaze: mode === "relaxed" ? 0.3 : mode === "strict" ? 1.2 : 0.7,
-    faceMissing: mode === "strict" ? 2.0 : 1.2,
-    decay: 0.02, // 10x slower decay so score doesn't vanish instantly
+    gaze: mode === "relaxed" ? 0.5 : mode === "strict" ? 1.8 : 1.0,
+    faceMissing: mode === "strict" ? 2.5 : 1.5,
+    decay: 0.01, // Even slower decay
   }), [mode]);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
@@ -59,32 +59,35 @@ export function useGazeDetection({
 
   const handleScoreUpdate = useCallback((delta: number) => {
     const now = Date.now();
-    
-    // Dynamic Grace Window: 
-    // Relaxed (DSA) = 12s buffer for notebooks
-    // Standard = 5s buffer
-    // Strict = 2.5s buffer
     const graceLimit = mode === "relaxed" ? 12000 : mode === "standard" ? 5000 : 2500;
 
     if (delta > 0 && now - lastGraceWindowRef.current < graceLimit && lastGraceWindowRef.current !== 0) {
       return;
     }
     
-    scoreRef.current = Math.min(100, Math.max(0, scoreRef.current + delta));
+    // Escalation Factor: The longer the deviation, the faster it grows
+    let multiplier = 1;
+    if (delta > 0 && lastGraceWindowRef.current !== 0) {
+      const deviationDuration = (now - lastGraceWindowRef.current) / 1000;
+      if (deviationDuration > 15) multiplier = 3.0;
+      else if (deviationDuration > 8) multiplier = 2.0;
+    }
+
+    scoreRef.current = Math.min(100, Math.max(0, scoreRef.current + (delta * multiplier)));
     setSuspicionScore(Math.floor(scoreRef.current));
 
-    if (scoreRef.current >= 85) {
+    if (scoreRef.current >= 95) { // Terminal threshold
       setStatus("terminated");
       onTerminate?.();
     } else if (scoreRef.current >= 40) {
-      if (now - lastViolationTimeRef.current > 10000) {
+      if (now - lastViolationTimeRef.current > 15000) {
         setStatus("warning");
-        onViolation?.(scoreRef.current, "Suspicious behavior pattern detected. Please stay focused.");
+        onViolation?.(scoreRef.current, "Suspicious behavior pattern. Please stay focused.");
         lastViolationTimeRef.current = now;
         setTimeout(() => { if (!destroyedRef.current) setStatus("ok"); }, 5000);
       }
     }
-  }, [onViolation, onTerminate]);
+  }, [mode, onViolation, onTerminate]);
 
   // PHASE 1: Robust Camera Init
   useEffect(() => {
@@ -169,26 +172,22 @@ export function useGazeDetection({
           const now = Date.now();
 
           if (!results.multiFaceLandmarks?.length) {
-            // Behavioral Memory: If we were already in a grace window, keep it. 
-            // If we are new or have been "good" for > 3s, start a new window.
-            if (lastGraceWindowRef.current === 0) {
-              lastGraceWindowRef.current = now;
-            }
+            if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = now;
             handleScoreUpdate(weights.faceMissing);
+            // We DON'T update lastViolationTimeRef here because they are BAD
           } else {
             const score = computeGazeScore(results.multiFaceLandmarks[0]);
             if (score < 0.42) {
-              if (lastGraceWindowRef.current === 0) {
-                lastGraceWindowRef.current = now;
-              }
+              if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = now;
               handleScoreUpdate(weights.gaze);
-              // Reset the "Good Behavior" timer
-              lastViolationTimeRef.current = now; 
             } else {
-              // ONLY reset the grace window if the user has been "Good" for at least 3 seconds
-              // This prevents the "Look down/Look up" micro-cheating loophole
+              // ONLY reset grace window and update "Good Behavior" timer if they are focused
               if (now - lastViolationTimeRef.current > 3000) {
                 lastGraceWindowRef.current = 0;
+              }
+              // Update last GOOD behavior timestamp
+              if (score >= 0.42) {
+                // We use this as a reference for how long they've been good
               }
               handleScoreUpdate(-weights.decay);
             }
