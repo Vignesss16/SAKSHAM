@@ -220,15 +220,8 @@ export default function CodingRound({ onComplete }: CodingRoundProps) {
   };
 
   useEffect(() => {
-    if (!started || failed || !showAvatar || !isTech) return;
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (now - lastVisionCheck > 45000) {
-        runVisionAnalysis();
-        setLastVisionCheck(now);
-      }
-    }, 10000);
-    return () => clearInterval(interval);
+    // Legacy vision check removed in favor of real-time useCodeAnalysis hook
+    return () => {};
   }, [started, failed, showAvatar, code, lastVisionCheck, isTech]);
 
   const avatarState = useMemo((): AvatarState => {
