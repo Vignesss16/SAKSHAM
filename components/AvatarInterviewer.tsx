@@ -5,7 +5,7 @@ import { useGLTF, useAnimations, PerspectiveCamera, Environment, ContactShadows,
 import * as THREE from 'three';
 
 // Professional Interviewer Model (Ready Player Me)
-const AVATAR_URL = "https://models.readyplayer.me/64f0aa2030f2f36128038753.glb";
+const AVATAR_URL = "https://models.readyplayer.me/6638a1699997108990d0961b.glb";
 
 export type AvatarState = 'talking' | 'thinking' | 'nodding' | 'idle';
 
