@@ -29,6 +29,7 @@ import {
 } from 'agora-agent-client-toolkit';
 import { AgentVisualizer, ConvoTextStream } from 'agora-agent-uikit';
 import { MicButtonWithVisualizer } from 'agora-agent-uikit/rtc';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import CodingRound from './CodingRound';
 import AvatarInterviewer, { AvatarState } from '@/components/AvatarInterviewer';
 
