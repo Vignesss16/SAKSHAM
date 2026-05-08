@@ -15,8 +15,9 @@ export default function OfflineResumeClient() {
   const [fileName, setFileName] = useState("");
 
   useEffect(() => {
-    // This only runs on the client
-    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    // Enforce HTTPS and stable version for the worker to avoid CORS/Dynamic Import blocks
+    const version = pdfjs.version;
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
   }, []);
 
   const initEngine = async () => {
