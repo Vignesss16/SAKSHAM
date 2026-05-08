@@ -59,8 +59,14 @@ export function useGazeDetection({
 
   const handleScoreUpdate = useCallback((delta: number) => {
     const now = Date.now();
-    // Simplified Grace Window: Ignore increases for the first 2.5s of a deviation
-    if (delta > 0 && now - lastGraceWindowRef.current < 2500 && lastGraceWindowRef.current !== 0) {
+    
+    // Dynamic Grace Window: 
+    // Relaxed (DSA) = 12s buffer for notebooks
+    // Standard = 5s buffer
+    // Strict = 2.5s buffer
+    const graceLimit = mode === "relaxed" ? 12000 : mode === "standard" ? 5000 : 2500;
+
+    if (delta > 0 && now - lastGraceWindowRef.current < graceLimit && lastGraceWindowRef.current !== 0) {
       return;
     }
     
