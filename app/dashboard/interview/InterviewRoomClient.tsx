@@ -280,28 +280,37 @@ function InterviewContent({
 
   const avatarState = useMemo((): AvatarState => {
     if (visualizerState === 'talking') return 'talking';
+    if (visualizerState === 'analyzing' || visualizerState === 'joining') return 'thinking';
     if (visualizerState === 'listening') return 'idle';
-    if (connectionState === 'CONNECTING') return 'thinking';
     return 'idle';
-  }, [visualizerState, connectionState]);
+  }, [visualizerState]);
 
-  // Track remote agent volume for lip sync
+  // Track remote agent volume for lip sync with robust safety checks
   useEffect(() => {
-    if (!isAgentConnected) {
+    if (!isAgentConnected || !joinedUID) {
       setAudioVolume(0);
       return;
     }
 
-    const agentUser = remoteUsers.find(u => u.uid.toString() === agentUID);
-    if (!agentUser?.audioTrack) return;
-
     const interval = setInterval(() => {
-      const vol = agentUser.audioTrack?.getVolumeLevel() || 0;
-      setAudioVolume(vol);
+      const agentUser = remoteUsers.find(u => u.uid.toString() === agentUID);
+      if (agentUser && agentUser.audioTrack) {
+        try {
+          const vol = agentUser.audioTrack.getVolumeLevel();
+          setAudioVolume(vol);
+        } catch (e) {
+          setAudioVolume(0);
+        }
+      } else {
+        setAudioVolume(0);
+      }
     }, 50);
 
-    return () => clearInterval(interval);
-  }, [remoteUsers, isAgentConnected, agentUID]);
+    return () => {
+      clearInterval(interval);
+      setAudioVolume(0);
+    };
+  }, [remoteUsers, isAgentConnected, agentUID, joinedUID]);
 
   const handleMicToggle = useCallback(async () => {
     const next = !isEnabled;
@@ -460,19 +469,29 @@ function InterviewContent({
               </ul>
             </div>
             <div className="mt-auto pt-6 border-t border-[#242424]">
-              <div className="flex items-center gap-3 bg-[#161d1f] p-4 rounded-lg border border-dashed border-[#859399]/30">
-                <div className="flex space-x-1">
-                  {[0, 0.2, 0.4].map((delay, i) => (
-                    <div
-                      key={i}
-                      className="w-1.5 h-1.5 bg-[#00d1ff] rounded-full animate-bounce"
-                      style={{ animationDelay: `${delay}s` }}
-                    ></div>
-                  ))}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3 bg-[#161d1f] p-4 rounded-lg border border-dashed border-[#859399]/30">
+                  <div className="flex space-x-1">
+                    {[0, 0.2, 0.4].map((delay, i) => (
+                      <div
+                        key={i}
+                        className="w-1.5 h-1.5 bg-[#00d1ff] rounded-full animate-bounce"
+                        style={{ animationDelay: `${delay}s` }}
+                      ></div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-[#00d1ff] font-medium">
+                    {isAgentConnected ? "Agent is listening..." : "Connecting to Agent..."}
+                  </p>
                 </div>
-                <p className="text-sm text-[#00d1ff] font-medium">
-                  {isAgentConnected ? "Agent is listening..." : "Connecting to Agent..."}
-                </p>
+                <a 
+                  href="https://readyplayer.me" 
+                  target="_blank" 
+                  className="text-[10px] text-[#859399] hover:text-[#00d1ff] transition-colors flex items-center gap-1 uppercase tracking-widest font-bold"
+                >
+                  <span className="material-symbols-outlined text-xs">person_add</span>
+                  Customize your AI Avatar
+                </a>
               </div>
             </div>
           </div>
