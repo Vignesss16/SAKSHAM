@@ -14,23 +14,27 @@ export default function AccessibilityPanel() {
   if (!mounted) return null;
 
   return (
-    <div className="fixed bottom-32 right-6 z-[9999] flex flex-col items-end gap-3 group">
+    <div className="fixed bottom-32 left-6 z-[999999] flex flex-col items-start gap-3 group">
       {/* Label for Screen Readers/Vision */}
-      <div className={`px-4 py-2 rounded-xl bg-black/90 backdrop-blur-2xl border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-all duration-300 translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 ${isEnabled ? 'border-[#00d1ff]/50' : ''}`}>
+      <div className={`px-4 py-2 rounded-xl bg-black/95 backdrop-blur-3xl border border-white/30 shadow-[0_0_30px_rgba(0,209,255,0.2)] transition-all duration-300 -translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 ${isEnabled ? 'border-[#00d1ff]/50' : ''}`}>
         <p className="text-[10px] font-black uppercase tracking-widest text-[#00d1ff]">
-          {isEnabled ? 'Reader Active' : 'Enable Page Reader'}
+          {isEnabled ? 'Accessibility Active' : 'Enable Page Reader'}
         </p>
       </div>
 
       <button
         onClick={toggleReader}
         aria-label={isEnabled ? "Disable Page Reader" : "Enable Page Reader"}
-        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_0_20px_rgba(0,0,0,0.5)] border ${
+        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_0_25px_rgba(0,0,0,0.9)] border relative ${
           isEnabled 
-            ? 'bg-[#00d1ff] text-[#001f28] border-white/20 scale-110 shadow-[0_0_30px_rgba(0,209,255,0.4)]' 
-            : 'bg-[#121a1e] text-[#859399] border-white/5 hover:border-[#00d1ff]/50 hover:text-white'
+            ? 'bg-[#00d1ff] text-[#001f28] border-white/30 scale-110 shadow-[0_0_40px_rgba(0,209,255,0.6)]' 
+            : 'bg-[#121a1e] text-[#859399] border-white/10 hover:border-[#00d1ff]/50 hover:text-white'
         }`}
       >
+        {/* Constant Pulsing Beacon */}
+        {!isEnabled && (
+          <div className="absolute inset-0 rounded-full border border-[#00d1ff]/30 animate-pulse" />
+        )}
         {isEnabled ? (
           <Volume2 className="w-6 h-6 animate-pulse" />
         ) : (
