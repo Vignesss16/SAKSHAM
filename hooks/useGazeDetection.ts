@@ -38,9 +38,9 @@ export function useGazeDetection({
   const destroyedRef = useRef(false);
 
   const weights = useMemo(() => ({
-    gaze: mode === "relaxed" ? 0.4 : mode === "strict" ? 1.5 : 0.8,
-    faceMissing: mode === "strict" ? 2.5 : 1.5,
-    decay: 0.5,
+    gaze: mode === "relaxed" ? 0.3 : mode === "strict" ? 1.2 : 0.7,
+    faceMissing: mode === "strict" ? 2.0 : 1.2,
+    decay: 0.02, // 10x slower decay so score doesn't vanish instantly
   }), [mode]);
 
   const computeGazeScore = useCallback((landmarks: any[]) => {
@@ -59,9 +59,11 @@ export function useGazeDetection({
 
   const handleScoreUpdate = useCallback((delta: number) => {
     const now = Date.now();
-    if (delta > 0 && now - lastGraceWindowRef.current < 3000 && lastGraceWindowRef.current !== 0) {
+    // Simplified Grace Window: Ignore increases for the first 2.5s of a deviation
+    if (delta > 0 && now - lastGraceWindowRef.current < 2500 && lastGraceWindowRef.current !== 0) {
       return;
     }
+    
     scoreRef.current = Math.min(100, Math.max(0, scoreRef.current + delta));
     setSuspicionScore(Math.floor(scoreRef.current));
 
@@ -159,18 +161,15 @@ export function useGazeDetection({
         fm.onResults((results: any) => {
           if (destroyedRef.current || !faceMeshRef.current) return;
           if (!results.multiFaceLandmarks?.length) {
-            faceMissingFramesRef.current++;
-            if (faceMissingFramesRef.current > 30) handleScoreUpdate(weights.faceMissing);
+            if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
+            handleScoreUpdate(weights.faceMissing);
           } else {
-            faceMissingFramesRef.current = 0;
             const score = computeGazeScore(results.multiFaceLandmarks[0]);
-            if (score < 0.45) {
+            if (score < 0.42) { // Slightly more sensitive
               if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
-              gazeOffFramesRef.current++;
-              if (gazeOffFramesRef.current > 60) handleScoreUpdate(weights.gaze);
+              handleScoreUpdate(weights.gaze);
             } else {
               lastGraceWindowRef.current = 0;
-              gazeOffFramesRef.current = 0;
               handleScoreUpdate(-weights.decay);
             }
           }
