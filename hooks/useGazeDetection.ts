@@ -160,16 +160,30 @@ export function useGazeDetection({
 
         fm.onResults((results: any) => {
           if (destroyedRef.current || !faceMeshRef.current) return;
+          const now = Date.now();
+
           if (!results.multiFaceLandmarks?.length) {
-            if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
+            // Behavioral Memory: If we were already in a grace window, keep it. 
+            // If we are new or have been "good" for > 3s, start a new window.
+            if (lastGraceWindowRef.current === 0) {
+              lastGraceWindowRef.current = now;
+            }
             handleScoreUpdate(weights.faceMissing);
           } else {
             const score = computeGazeScore(results.multiFaceLandmarks[0]);
-            if (score < 0.42) { // Slightly more sensitive
-              if (lastGraceWindowRef.current === 0) lastGraceWindowRef.current = Date.now();
+            if (score < 0.42) {
+              if (lastGraceWindowRef.current === 0) {
+                lastGraceWindowRef.current = now;
+              }
               handleScoreUpdate(weights.gaze);
+              // Reset the "Good Behavior" timer
+              lastViolationTimeRef.current = now; 
             } else {
-              lastGraceWindowRef.current = 0;
+              // ONLY reset the grace window if the user has been "Good" for at least 3 seconds
+              // This prevents the "Look down/Look up" micro-cheating loophole
+              if (now - lastViolationTimeRef.current > 3000) {
+                lastGraceWindowRef.current = 0;
+              }
               handleScoreUpdate(-weights.decay);
             }
           }
