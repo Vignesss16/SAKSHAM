@@ -272,6 +272,11 @@ function InterviewContent({
     setConnectionState(curState);
   });
 
+  const visualizerState = useMemo(
+    () => mapAgentVisualizerState(agentState, isAgentConnected, connectionState),
+    [agentState, isAgentConnected, connectionState],
+  );
+
   const avatarState = useMemo((): AvatarState => {
     if (visualizerState === 'talking') return 'talking';
     if (visualizerState === 'listening') return 'idle';
