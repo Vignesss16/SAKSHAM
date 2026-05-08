@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useAccessibility } from '@/context/AccessibilityContext';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { 
   Type, 
   Contrast, 
@@ -25,6 +26,12 @@ export default function AccessibilityToolbar() {
   } = useAccessibility();
 
   const [isOpen, setIsOpen] = useState(false);
+  const { speak } = useTextToSpeech();
+
+  const handleToggle = (fn: () => void, label: string) => {
+    fn();
+    speak(`${label} toggled`);
+  };
 
   return (
     <div className={`fixed top-1/4 left-0 z-[1000000] transition-all duration-500 ${isOpen ? 'translate-x-0' : '-translate-x-[calc(100%-48px)]'}`}>
@@ -44,36 +51,36 @@ export default function AccessibilityToolbar() {
                 <span>{fontSize}%</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setFontSize(fontSize - 10)} className="flex-1 p-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors text-white text-xs">-</button>
-                <button onClick={() => setFontSize(fontSize + 10)} className="flex-1 p-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors text-white text-xs">+</button>
+                <button onClick={() => { setFontSize(fontSize - 10); speak("Font size decreased"); }} className="flex-1 p-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors text-white text-xs">-</button>
+                <button onClick={() => { setFontSize(fontSize + 10); speak("Font size increased"); }} className="flex-1 p-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors text-white text-xs">+</button>
               </div>
             </div>
 
             {/* Toggles */}
             <div className="grid grid-cols-2 gap-3">
               <button 
-                onClick={toggleHighContrast}
+                onClick={() => handleToggle(toggleHighContrast, "High Contrast")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${highContrast ? 'bg-[#00d1ff] text-[#001f28] border-[#00d1ff]' : 'bg-white/5 text-[#859399] border-white/5 hover:border-white/20'}`}
               >
                 <Contrast size={20} />
                 <span className="text-[10px] font-black uppercase">Contrast</span>
               </button>
               <button 
-                onClick={toggleDyslexiaFont}
+                onClick={() => handleToggle(toggleDyslexiaFont, "Dyslexia Font")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${dyslexiaFont ? 'bg-[#00d1ff] text-[#001f28] border-[#00d1ff]' : 'bg-white/5 text-[#859399] border-white/5 hover:border-white/20'}`}
               >
                 <BookOpen size={20} />
                 <span className="text-[10px] font-black uppercase">Dyslexia</span>
               </button>
               <button 
-                onClick={toggleDarkMode}
+                onClick={() => handleToggle(toggleDarkMode, "Theme")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${!darkMode ? 'bg-[#00d1ff] text-[#001f28] border-[#00d1ff]' : 'bg-white/5 text-[#859399] border-white/5 hover:border-white/20'}`}
               >
                 {darkMode ? <Moon size={20} /> : <Sun size={20} />}
                 <span className="text-[10px] font-black uppercase">{darkMode ? 'Dark' : 'Light'}</span>
               </button>
               <button 
-                onClick={toggleVoiceAssistant}
+                onClick={() => handleToggle(toggleVoiceAssistant, "Voice Assistant")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${voiceAssistantActive ? 'bg-[#00d1ff] text-[#001f28] border-[#00d1ff]' : 'bg-white/5 text-[#859399] border-white/5 hover:border-white/20'}`}
               >
                 <Mic size={20} />

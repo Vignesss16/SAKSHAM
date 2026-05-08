@@ -44,20 +44,22 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     localStorage.setItem('saksham-accessibility', JSON.stringify(state));
     
-    // Apply visual changes to document
+    // Apply visual changes to BODY for better browser compatibility
     const root = document.documentElement;
+    const body = document.body;
+    
     root.style.fontSize = `${state.fontSize}%`;
     
     if (state.highContrast) {
-      root.classList.add('high-contrast');
+      body.classList.add('high-contrast');
     } else {
-      root.classList.remove('high-contrast');
+      body.classList.remove('high-contrast');
     }
 
     if (state.dyslexiaFont) {
-      root.classList.add('dyslexia-font');
+      body.classList.add('dyslexia-font');
     } else {
-      root.classList.remove('dyslexia-font');
+      body.classList.remove('dyslexia-font');
     }
   }, [state]);
 
