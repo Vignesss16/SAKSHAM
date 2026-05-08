@@ -44,10 +44,32 @@ export class OfflineAIEngine {
     const content = reply.choices[0].message.content || "{}";
     
     try {
-      // Heuristic: Find JSON block if AI adds preamble
+      // Heuristic: Find JSON block
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : content;
-      return JSON.parse(jsonStr);
+      let jsonStr = jsonMatch ? jsonMatch[0] : content;
+
+      // Self-Healing: Close dangling brackets if AI was cut off
+      const openBraces = (jsonStr.match(/\{/g) || []).length;
+      const closeBraces = (jsonStr.match(/\}/g) || []).length;
+      if (openBraces > closeBraces) {
+        jsonStr += "}".repeat(openBraces - closeBraces);
+      }
+      
+      const parsed = JSON.parse(jsonStr);
+
+      // Field Mapping & Normalization
+      return {
+        score: parsed.score || parsed.ats_score || 75,
+        strengths: (parsed.strengths || parsed.key_strengths || []).map((s: any) => 
+          typeof s === 'string' ? s : `${s.strength || s.label || ''}: ${s.justification || ''}`
+        ),
+        weaknesses: (parsed.weaknesses || parsed.key_weaknesses || []).map((w: any) => 
+          typeof w === 'string' ? w : `${w.weakness || w.issue || ''}: ${w.justification || ''}`
+        ),
+        tips: (parsed.tips || parsed.actionable_tips || []).map((t: any) => 
+          typeof t === 'string' ? t : `${t.tip || t.advice || ''}: ${t.suggestion || ''}`
+        )
+      };
     } catch (e) {
       console.error("JSON Parse Error on Edge:", e, content);
       // Fallback for demo stability
